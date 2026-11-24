@@ -15,6 +15,8 @@ import {
   Camera,
   HardDrive,
   Calendar,
+  Link2,
+  Check,
 } from 'lucide-react';
 
 interface ComparisonViewProps {
@@ -34,6 +36,25 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
   const [highlightDifferences, setHighlightDifferences] = useState<boolean>(true);
   const [activeSlotSearch, setActiveSlotSearch] = useState<number | null>(null);
   const [slotSearchQuery, setSlotSearchQuery] = useState('');
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const handleCopyCompareLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      const input = document.createElement('input');
+      input.value = window.location.href;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    }
+  };
 
   // Resolve phones strictly for slots 0, 1, 2
   const slotPhones: (Phone | null)[] = [0, 1, 2].map((idx) => {
@@ -362,11 +383,11 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
       <div className="bg-app-surface border border-app-border rounded-lg shadow-xs overflow-hidden">
         {/* Table Top Utility Bar */}
         <div className="p-3 bg-app-bg/60 border-b border-app-border flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <span className="font-bold text-app-text uppercase tracking-wider text-[11px]">
               Technical Specifications Ledger
             </span>
-            <span className="text-app-muted">·</span>
+            <span className="text-app-muted hidden sm:inline">·</span>
             <label className="flex items-center gap-1.5 cursor-pointer text-app-text select-none font-medium">
               <input
                 type="checkbox"
@@ -378,23 +399,49 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
             </label>
           </div>
 
-          <div className="flex items-center gap-2 text-app-muted">
-            <span>Flipkart single-store benchmark</span>
+          <div className="flex items-center gap-3">
+            <span className="text-app-muted hidden sm:inline">Flipkart single-store benchmark</span>
+            <button
+              type="button"
+              onClick={handleCopyCompareLink}
+              disabled={activePhones.length === 0}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded border text-[11px] font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                copiedLink
+                  ? 'bg-teal-50 border-teal-300 text-[#0F766E]'
+                  : 'bg-app-surface border-app-border text-app-text hover:border-app-accent hover:text-app-accent'
+              }`}
+              title="Copy shareable link to this 3-phone comparison"
+            >
+              {copiedLink ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-[#0F766E]" />
+                  <span>Copied</span>
+                </>
+              ) : (
+                <>
+                  <Link2 className="w-3.5 h-3.5 text-app-accent" />
+                  <span>Copy Compare Link</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Sticky Header Row (Strict 4-Column Grid: Col 1 = Label, Col 2 = Slot 1, Col 3 = Slot 2, Col 4 = Slot 3) */}
-        <div className="sticky top-[57px] z-20 bg-app-surface border-b border-app-border shadow-xs">
-          <div className="grid grid-cols-12 divide-x divide-app-border">
-            {/* Column 0: Label */}
-            <div className="col-span-3 p-3 flex flex-col justify-end bg-app-bg/40">
-              <span className="text-[10px] font-bold text-app-muted uppercase tracking-wider">
-                Comparing Specs
-              </span>
-              <span className="text-xs font-semibold text-app-text">
-                {activePhones.length} of 3 devices active
-              </span>
-            </div>
+        {/* Horizontal scroll container on mobile (< 768px) with sticky left label column */}
+        <div className="overflow-x-auto md:overflow-x-visible">
+          <div className="min-w-[760px] md:min-w-full">
+            {/* Sticky Header Row (Strict 4-Column Grid: Col 1 = Label, Col 2 = Slot 1, Col 3 = Slot 2, Col 4 = Slot 3) */}
+            <div className="md:sticky md:top-[57px] z-20 bg-app-surface border-b border-app-border shadow-xs">
+              <div className="grid grid-cols-12 divide-x divide-app-border">
+                {/* Column 0: Label */}
+                <div className="col-span-3 p-3 flex flex-col justify-end bg-[#F7F7F5] sticky left-0 z-10 border-r border-[#E4E4DE]">
+                  <span className="text-[10px] font-bold text-app-muted uppercase tracking-wider">
+                    Comparing Specs
+                  </span>
+                  <span className="text-xs font-semibold text-app-text">
+                    {activePhones.length} of 3 devices active
+                  </span>
+                </div>
 
             {/* Columns 1, 2, 3: Slots 0, 1, 2 */}
             {[0, 1, 2].map((slotIdx) => {
@@ -564,7 +611,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 : 'hover:bg-[#F9F9F7]'
             }`}
           >
-            <div className="col-span-3 p-3 font-medium text-app-muted">Chipset</div>
+            <div className="col-span-3 p-3 font-medium text-app-muted sticky left-0 z-10 bg-app-surface border-r border-[#E4E4DE]">Chipset</div>
             {[0, 1, 2].map((idx) => {
               const p = slotPhones[idx];
               return (
@@ -583,7 +630,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 : 'hover:bg-[#F9F9F7]'
             }`}
           >
-            <div className="col-span-3 p-3 font-medium text-app-muted">
+            <div className="col-span-3 p-3 font-medium text-app-muted sticky left-0 z-10 bg-app-surface border-r border-[#E4E4DE]">
               <span>AnTuTu Benchmark (v10)</span>
             </div>
             {[0, 1, 2].map((idx) => {
@@ -626,7 +673,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 : 'hover:bg-[#F9F9F7]'
             }`}
           >
-            <div className="col-span-3 p-3 font-medium text-app-muted">RAM & Type</div>
+            <div className="col-span-3 p-3 font-medium text-app-muted sticky left-0 z-10 bg-app-surface border-r border-[#E4E4DE]">RAM & Type</div>
             {[0, 1, 2].map((idx) => {
               const p = slotPhones[idx];
               return (
@@ -658,7 +705,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 : 'hover:bg-[#F9F9F7]'
             }`}
           >
-            <div className="col-span-3 p-3 font-medium text-app-muted">Screen Type & Size</div>
+            <div className="col-span-3 p-3 font-medium text-app-muted sticky left-0 z-10 bg-app-surface border-r border-[#E4E4DE]">Screen Type & Size</div>
             {[0, 1, 2].map((idx) => {
               const p = slotPhones[idx];
               return (
@@ -684,7 +731,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 : 'hover:bg-[#F9F9F7]'
             }`}
           >
-            <div className="col-span-3 p-3 font-medium text-app-muted">Refresh Rate & Brightness</div>
+            <div className="col-span-3 p-3 font-medium text-app-muted sticky left-0 z-10 bg-app-surface border-r border-[#E4E4DE]">Refresh Rate & Brightness</div>
             {[0, 1, 2].map((idx) => {
               const p = slotPhones[idx];
               return (
@@ -726,7 +773,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 : 'hover:bg-[#F9F9F7]'
             }`}
           >
-            <div className="col-span-3 p-3 font-medium text-app-muted">Battery Capacity</div>
+            <div className="col-span-3 p-3 font-medium text-app-muted sticky left-0 z-10 bg-app-surface border-r border-[#E4E4DE]">Battery Capacity</div>
             {[0, 1, 2].map((idx) => {
               const p = slotPhones[idx];
               if (!p) return <div key={`spec-bat-${idx}`} className="col-span-3 p-3 text-app-muted">—</div>;
@@ -762,7 +809,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 : 'hover:bg-[#F9F9F7]'
             }`}
           >
-            <div className="col-span-3 p-3 font-medium text-app-muted">Charging Speed</div>
+            <div className="col-span-3 p-3 font-medium text-app-muted sticky left-0 z-10 bg-app-surface border-r border-[#E4E4DE]">Charging Speed</div>
             {[0, 1, 2].map((idx) => {
               const p = slotPhones[idx];
               if (!p) return <div key={`spec-charge-${idx}`} className="col-span-3 p-3 text-app-muted">—</div>;
@@ -797,7 +844,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 : 'hover:bg-[#F9F9F7]'
             }`}
           >
-            <div className="col-span-3 p-3 font-medium text-app-muted">Rear Primary Sensor</div>
+            <div className="col-span-3 p-3 font-medium text-app-muted sticky left-0 z-10 bg-app-surface border-r border-[#E4E4DE]">Rear Primary Sensor</div>
             {[0, 1, 2].map((idx) => {
               const p = slotPhones[idx];
               const rearPrimary =
@@ -834,7 +881,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 : 'hover:bg-[#F9F9F7]'
             }`}
           >
-            <div className="col-span-3 p-3 font-medium text-app-muted">Front Selfie Camera</div>
+            <div className="col-span-3 p-3 font-medium text-app-muted sticky left-0 z-10 bg-app-surface border-r border-[#E4E4DE]">Front Selfie Camera</div>
             {[0, 1, 2].map((idx) => {
               const p = slotPhones[idx];
               const frontRes =
@@ -873,7 +920,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 : 'hover:bg-[#F9F9F7]'
             }`}
           >
-            <div className="col-span-3 p-3 font-medium text-app-muted">Storage & UFS Type</div>
+            <div className="col-span-3 p-3 font-medium text-app-muted sticky left-0 z-10 bg-app-surface border-r border-[#E4E4DE]">Storage & UFS Type</div>
             {[0, 1, 2].map((idx) => {
               const p = slotPhones[idx];
               return (
@@ -900,7 +947,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 : 'hover:bg-[#F9F9F7]'
             }`}
           >
-            <div className="col-span-3 p-3 font-medium text-app-muted">Operating System & Updates</div>
+            <div className="col-span-3 p-3 font-medium text-app-muted sticky left-0 z-10 bg-app-surface border-r border-[#E4E4DE]">Operating System & Updates</div>
             {[0, 1, 2].map((idx) => {
               const p = slotPhones[idx];
               return (
@@ -913,7 +960,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
 
           {/* Release Date */}
           <div className="grid grid-cols-12 divide-x divide-app-border hover:bg-[#F9F9F7] transition-colors">
-            <div className="col-span-3 p-3 font-medium text-app-muted flex items-center gap-1.5">
+            <div className="col-span-3 p-3 font-medium text-app-muted sticky left-0 z-10 bg-app-surface border-r border-[#E4E4DE] flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-app-accent" />
               <span>Release Date</span>
             </div>
@@ -929,7 +976,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
 
           {/* PROS & CONS */}
           <div className="grid grid-cols-12 divide-x divide-app-border bg-app-bg/20">
-            <div className="col-span-3 p-3 font-medium text-app-muted">Key Advantages & Tradeoffs</div>
+            <div className="col-span-3 p-3 font-medium text-app-muted sticky left-0 z-10 bg-app-surface border-r border-[#E4E4DE]">Key Advantages & Tradeoffs</div>
             {[0, 1, 2].map((idx) => {
               const p = slotPhones[idx];
               if (!p) return <div key={`spec-pros-${idx}`} className="col-span-3 p-3 text-app-muted">—</div>;
@@ -974,7 +1021,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
 
           {/* FLIPKART OFFERS & BUY */}
           <div className="grid grid-cols-12 divide-x divide-app-border bg-teal-50/20">
-            <div className="col-span-3 p-3 font-medium text-app-muted">
+            <div className="col-span-3 p-3 font-medium text-app-muted sticky left-0 z-10 bg-app-surface border-r border-[#E4E4DE]">
               <span>Active Flipkart Offers</span>
             </div>
             {[0, 1, 2].map((idx) => {
@@ -1007,6 +1054,8 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
             })}
           </div>
 
+        </div>
+          </div>
         </div>
       </div>
     </div>

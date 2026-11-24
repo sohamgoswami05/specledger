@@ -16,6 +16,77 @@ interface HeaderProps {
   setActiveTab: (tab: 'compare' | 'browse') => void;
   comparedCount: number;
   totalCatalogCount: number;
+  lastSyncedAt?: string | null;
+}
+
+function formatSyncTimestamp(isoString?: string | null): { label: string; tooltip: string } {
+  if (!isoString) {
+    return {
+      label: 'Synced daily · IST',
+      tooltip: 'Automated daily Flipkart sync at 8:30 AM IST',
+    };
+  }
+
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) {
+    return {
+      label: 'Synced daily · IST',
+      tooltip: 'Automated daily Flipkart sync at 8:30 AM IST',
+    };
+  }
+
+  const exactTooltip =
+    'Last synced: ' +
+    date.toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }) +
+    ' IST';
+
+  const diffMs = Date.now() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+
+  const istTime = date.toLocaleTimeString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).toUpperCase();
+
+  // Compare calendar day in IST
+  const nowIstDate = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+  const syncIstDate = date.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+
+  if (diffMins >= 0 && diffMins < 60) {
+    return {
+      label: diffMins <= 1 ? 'Synced just now' : `Synced ${diffMins}m ago`,
+      tooltip: exactTooltip,
+    };
+  }
+  if (diffHours >= 0 && diffHours < 6) {
+    return {
+      label: `Synced ${diffHours}h ago`,
+      tooltip: exactTooltip,
+    };
+  }
+  if (nowIstDate === syncIstDate) {
+    return {
+      label: `Synced Today, ${istTime} IST`,
+      tooltip: exactTooltip,
+    };
+  }
+
+  const istShortDate = date.toLocaleDateString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: 'numeric',
+    month: 'short',
+  });
+  return {
+    label: `Synced ${istShortDate}, ${istTime} IST`,
+    tooltip: exactTooltip,
+  };
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -23,6 +94,7 @@ export const Header: React.FC<HeaderProps> = ({
   setActiveTab,
   comparedCount,
   totalCatalogCount,
+  lastSyncedAt,
 }) => {
   const {
     pincode,
@@ -36,6 +108,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [isEditingPincode, setIsEditingPincode] = useState(false);
   const [tempPincode, setTempPincode] = useState(pincode);
   const [errorMsg, setErrorMsg] = useState('');
+  const syncInfo = formatSyncTimestamp(lastSyncedAt);
 
   const handleSavePincode = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,16 +161,16 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Navigation Tab Switcher */}
-          <nav className="flex items-center bg-app-bg p-1 rounded-lg border border-app-border self-start md:self-auto">
+          <nav className="flex items-center bg-app-bg p-1 rounded-lg border border-app-border self-start md:self-auto max-w-full overflow-x-auto">
             <button
               onClick={() => setActiveTab('compare')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition-all ${
                 activeTab === 'compare'
                   ? 'bg-app-surface text-app-text shadow-xs border border-app-border'
                   : 'text-app-muted hover:text-app-text'
               }`}
             >
-              <Scale className="w-3.5 h-3.5 text-app-accent" />
+              <Scale className="w-3.5 h-3.5 text-app-accent flex-shrink-0" />
               <span>Spec & Price Comparison</span>
               <span className="tabular-nums px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-app-accent-light text-app-accent-hover">
                 {comparedCount}/3
@@ -106,13 +179,13 @@ export const Header: React.FC<HeaderProps> = ({
 
             <button
               onClick={() => setActiveTab('browse')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition-all ${
                 activeTab === 'browse'
                   ? 'bg-app-surface text-app-text shadow-xs border border-app-border'
                   : 'text-app-muted hover:text-app-text'
               }`}
             >
-              <Smartphone className="w-3.5 h-3.5 text-app-accent" />
+              <Smartphone className="w-3.5 h-3.5 text-app-accent flex-shrink-0" />
               <span>Browse All Under ₹30k</span>
               <span className="tabular-nums px-1.5 py-0.2 rounded-full text-[10px] font-medium bg-app-border text-app-muted">
                 {totalCatalogCount}
@@ -121,7 +194,7 @@ export const Header: React.FC<HeaderProps> = ({
           </nav>
 
           {/* Delivery Pincode & Daily Refresh Meta */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
             {/* Pincode Pill */}
             <div className="relative">
               <button
@@ -150,7 +223,7 @@ export const Header: React.FC<HeaderProps> = ({
 
               {/* Pincode Edit Popover */}
               {isEditingPincode && (
-                <div className="absolute right-0 mt-2 w-72 bg-app-surface border border-app-border rounded-lg shadow-lg p-3 z-50">
+                <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 w-72 bg-app-surface border border-app-border rounded-lg shadow-lg p-3 z-50">
                   <div className="flex items-center justify-between pb-2 mb-2 border-b border-app-border-subtle">
                     <span className="text-xs font-semibold text-app-text">
                       Check Flipkart Delivery PIN
@@ -208,19 +281,19 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
 
-            {/* Daily Scrape Indicator Tooltip Pill */}
+            {/* Live Last Synced Indicator Pill */}
             <div
-              className="hidden lg:flex items-center gap-1.5 text-[11px] text-app-muted px-2.5 py-1 bg-app-bg border border-app-border rounded-md"
-              title="Daily stock check timestamp"
+              className="flex items-center gap-1.5 text-[11px] text-app-muted px-2.5 py-1.5 bg-app-bg border border-app-border rounded-md tabular-nums whitespace-nowrap"
+              title={syncInfo.tooltip}
             >
-              <Clock className="w-3 h-3 text-app-accent" />
-              <span>Stock refreshed daily · 9:00 AM IST</span>
+              <Clock className="w-3 h-3 text-app-accent flex-shrink-0" />
+              <span>{syncInfo.label}</span>
             </div>
 
-            {/* Watchlist Trigger Button */}
+            {/* Watchlist Trigger Button (Desktop) */}
             <button
               onClick={() => setIsWatchlistOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-app-border bg-app-surface text-xs font-medium text-app-text hover:bg-app-bg transition-colors cursor-pointer"
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-app-border bg-app-surface text-xs font-medium text-app-text hover:bg-app-bg transition-colors cursor-pointer"
               title="View restock watchlist"
               data-testid="watchlist-trigger"
             >

@@ -106,7 +106,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         {/* Row 1: Search, Brand Chips, and Price Ceiling */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Live Autocomplete Search Box */}
-          <div ref={searchContainerRef} className="relative flex-1 min-w-[240px] max-w-md">
+          <div ref={searchContainerRef} className="relative w-full sm:w-auto sm:flex-1 sm:min-w-[240px] sm:max-w-md">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-app-muted z-10" />
             <input
               type="text"
@@ -277,7 +277,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           </div>
 
           {/* Price Ceiling Control */}
-          <div className="flex items-center gap-2 text-xs bg-app-bg px-2.5 py-1.5 rounded-md border border-app-border">
+          <div className="flex items-center justify-between sm:justify-start gap-2 text-xs bg-app-bg px-2.5 py-1.5 rounded-md border border-app-border w-full sm:w-auto">
             <span className="text-app-muted font-medium whitespace-nowrap">
               Max Price:
             </span>
@@ -380,7 +380,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           </div>
 
           {/* Sort & Reset Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-1.5 text-app-muted">
               <ArrowUpDown className="w-3.5 h-3.5" />
               <select

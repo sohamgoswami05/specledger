@@ -44,6 +44,7 @@ TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
 IS_DEBUG_MODE = "--debug" in sys.argv
+IS_LIST_MISSING_URLS = "--list-missing-urls" in sys.argv
 
 if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
     print("❌ Error: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables are required.")
@@ -412,6 +413,19 @@ def main():
     except Exception as e:
         print(f"❌ Failed to query phones table: {e}")
         sys.exit(1)
+
+    if IS_LIST_MISSING_URLS:
+        missing = [p for p in all_phones if "/p/" not in (p.get("flipkart_url") or "")]
+        missing.sort(key=lambda x: (x.get("brand") or "", x.get("model_name") or ""))
+        linked_count = len(all_phones) - len(missing)
+        print(f"\n📋 Unlinked Phones Audit ({len(missing)} missing / {len(all_phones)} total; {linked_count} already linked with /p/):\n")
+        if not missing:
+            print("✅ All phones have direct /p/ Flipkart URLs!")
+        else:
+            for idx, p in enumerate(missing, 1):
+                print(f"  {idx:2d}. {p['id']:<32} | {p['model_name']}")
+        print("")
+        return
 
     # 2. Fetch existing pincode availability for comparison
     try:

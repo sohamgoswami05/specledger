@@ -16,18 +16,46 @@ const AppContent: React.FC = () => {
   const { toast, filterWatchlistAgainstPhones } = usePincode();
   
   // Strict 3-element slot array: [Slot 1, Slot 2, Slot 3]
-  const [comparedSlots, setComparedSlots] = useState<(string | null)[]>([
-    DEFAULT_COMPARE_IDS[0] || null,
-    DEFAULT_COMPARE_IDS[1] || null,
-    DEFAULT_COMPARE_IDS[2] || null,
-  ]);
+  const [comparedSlots, setComparedSlots] = useState<(string | null)[]>(() => {
+    if (typeof window !== 'undefined') {
+      const compareParam = new URLSearchParams(window.location.search).get('compare');
+      if (compareParam) {
+        const parsed = compareParam
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .slice(0, 3);
+        if (parsed.length > 0) {
+          return [parsed[0] || null, parsed[1] || null, parsed[2] || null];
+        }
+      }
+    }
+    return [
+      DEFAULT_COMPARE_IDS[0] || null,
+      DEFAULT_COMPARE_IDS[1] || null,
+      DEFAULT_COMPARE_IDS[2] || null,
+    ];
+  });
 
   // Pass active compared IDs into usePhones to load 365-day history on demand
   const activeComparedIds = useMemo(
     () => comparedSlots.filter(Boolean) as string[],
     [comparedSlots]
   );
-  const { phones, loadHistoryForIds } = usePhones(activeComparedIds);
+  const { phones, loadHistoryForIds, lastSyncedAt } = usePhones(activeComparedIds);
+
+  // Sync active comparison slots to URL query parameters (?compare=id1,id2,id3)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const active = comparedSlots.filter(Boolean) as string[];
+    const url = new URL(window.location.href);
+    if (active.length > 0) {
+      url.searchParams.set('compare', active.join(','));
+    } else {
+      url.searchParams.delete('compare');
+    }
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+  }, [comparedSlots]);
 
   const [activeTab, setActiveTab] = useState<'compare' | 'browse'>('compare');
   const [selectedModalPhone, setSelectedModalPhone] = useState<Phone | null>(null);
@@ -240,6 +268,7 @@ const AppContent: React.FC = () => {
         setActiveTab={setActiveTab}
         comparedCount={activeSlotCount}
         totalCatalogCount={phones.length}
+        lastSyncedAt={lastSyncedAt}
       />
 
       {/* Global Quick Filter Strip with Live Autocomplete */}

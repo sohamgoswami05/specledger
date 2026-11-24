@@ -8,6 +8,7 @@ export interface UsePhonesResult {
   loading: boolean;
   isLiveSupabase: boolean;
   error: string | null;
+  lastSyncedAt: string | null;
   refresh: () => Promise<void>;
   loadHistoryForIds: (ids: string[]) => Promise<void>;
 }
@@ -17,6 +18,7 @@ export function usePhones(activeComparedIds: string[] = []): UsePhonesResult {
   const [loading, setLoading] = useState<boolean>(isSupabaseConfigured);
   const [isLiveSupabase, setIsLiveSupabase] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const fetchedIdsRef = useRef<Set<string>>(new Set());
 
   // Function to load 365-day history on-demand for specific phone IDs
@@ -305,6 +307,31 @@ export function usePhones(activeComparedIds: string[] = []): UsePhonesResult {
         };
       });
 
+      // Compute latest sync timestamp from summaryRows (pincode_availability.last_checked_at)
+      let maxCheckedTime = 0;
+      summaryRows.forEach((row) => {
+        if (row.last_checked_at) {
+          const t = new Date(row.last_checked_at).getTime();
+          if (!Number.isNaN(t) && t > maxCheckedTime) {
+            maxCheckedTime = t;
+          }
+        }
+      });
+
+      if (maxCheckedTime > 0) {
+        setLastSyncedAt(new Date(maxCheckedTime).toISOString());
+      } else {
+        // Fallback to latest recorded_at from price_history
+        const { data: latestHist } = await supabase
+          .from('price_history')
+          .select('recorded_at')
+          .order('recorded_at', { ascending: false })
+          .limit(1);
+        if (latestHist && latestHist.length > 0 && latestHist[0].recorded_at) {
+          setLastSyncedAt(new Date(latestHist[0].recorded_at).toISOString());
+        }
+      }
+
       setPhonesList(mappedPhones);
       setIsLiveSupabase(true);
     } catch (err: any) {
@@ -333,6 +360,7 @@ export function usePhones(activeComparedIds: string[] = []): UsePhonesResult {
     loading,
     isLiveSupabase,
     error,
+    lastSyncedAt,
     refresh: fetchCatalog,
     loadHistoryForIds,
   };
