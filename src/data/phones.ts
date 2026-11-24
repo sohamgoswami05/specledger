@@ -90,6 +90,8 @@ export const phones: Phone[] = RAW_CATALOG.map((raw) => {
     },
     pros: raw.specs.pros,
     cons: raw.specs.cons,
+    isSpecialMention: Boolean(raw.is_special_mention || raw.current_price_inr > 30000),
+    specialMentionNote: raw.special_mention_note || (raw.current_price_inr > 30000 ? 'Normally above ₹30,000; high recommendation if seasonal sales drop it below ₹30k.' : undefined),
   };
 });
 

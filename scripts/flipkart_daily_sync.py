@@ -1,26 +1,35 @@
 #!/usr/bin/env python3
 """
-Flipkart Daily Price & Pincode Stock Sync Script (Playwright)
-------------------------------------------------------------
+Flipkart Daily Price & Pincode Stock Sync Script (Playwright Stealth)
+-------------------------------------------------------------------
 Runs via GitHub Actions daily at 08:30 AM IST (03:00 UTC) or manually.
 1. Queries Supabase for phones with active Flipkart product URLs (/p/).
-2. Launches headless Chromium with randomized User-Agents and viewports.
+2. Launches Chromium with stealth arguments and webdriver evasion.
 3. Checks delivery availability for TARGET_PINCODE (default 700034, West Bengal).
-4. Extracts live INR price and delivery/stock status.
-5. Detects restock events (out_of_stock -> in_stock) and price drops (>= ₹1,000 or >= 5%).
-6. Sends instant Telegram alerts for Restock & Price Drops.
-7. Upserts to price_history, phones, and pincode_availability in Supabase.
+4. Extracts live INR price and delivery/stock status via a 3-layer fallback:
+   (a) <script type="application/ld+json"> Product schema (offers.price & offers.availability)
+   (b) Primary Flipkart DOM selectors + regex matching ₹XX,XXX near <h1>
+   (c) Delivery estimation and stock indicators
+5. Supports --debug CLI flag to inspect HTTP status, page title, and dump debug_page.png/.html on failure.
+6. Detects restock events (out_of_stock -> in_stock) and price drops (>= ₹1,000 or >= 5%).
+7. Sends instant Telegram alerts for Restock & Price Drops.
+8. If live parsing fails: logs [FAIL] and skips ALL database writes for that phone.
 """
 
 import os
 import re
 import sys
+import json
 import time
 import random
 import datetime
 from pathlib import Path
 from dotenv import load_dotenv
 import requests
+
+# Enable line-buffered stdout for real-time logs
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(line_buffering=True)
 
 # Load .env file if running locally
 env_path = Path(__file__).resolve().parent.parent / '.env'
@@ -33,6 +42,8 @@ PINCODE_PREFIX = TARGET_PINCODE[0] if TARGET_PINCODE else '7'
 
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+
+IS_DEBUG_MODE = "--debug" in sys.argv
 
 if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
     print("❌ Error: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables are required.")
@@ -54,11 +65,11 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
 # Realistic Desktop User-Agents and Viewports
 USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36 Edg/123.0.0.0"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:135.0) Gecko/20100101 Firefox/135.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36 Edg/133.0.0.0"
 ]
 
 VIEWPORTS = [
@@ -67,6 +78,9 @@ VIEWPORTS = [
     {"width": 1366, "height": 768},
     {"width": 1536, "height": 864}
 ]
+
+# Track if debug evidence was already dumped once
+debug_dump_saved = False
 
 
 def send_telegram_alert(message: str):
@@ -94,76 +108,203 @@ def send_telegram_alert(message: str):
 
 def clean_inr_price(price_text: str) -> int:
     """Extracts integer value from Flipkart price strings like '₹24,999' or '₹ 21,449'."""
-    clean = re.sub(r'[^\d]', '', price_text)
+    clean = re.sub(r'[^\d]', '', str(price_text))
     return int(clean) if clean else 0
+
+
+def is_valid_delivery_text(text: str) -> bool:
+    """Verifies that extracted text is a genuine Flipkart delivery estimate and not header/nav garbage."""
+    if not text or len(text.strip()) < 4:
+        return False
+    lower = text.lower().strip()
+    banned = ["login", "sign in", "cart", "flipkart", "explore plus", "become a seller", "notifications", "orders", "wishlist"]
+    if any(b in lower for b in banned):
+        return False
+    valid_keywords = [
+        "delivery by",
+        "delivered by",
+        "delivery in",
+        "tomorrow",
+        "days",
+        "not deliverable",
+        "currently out of stock",
+        "serviceable"
+    ]
+    return any(k in lower for k in valid_keywords)
+
+
+def dump_debug_artifacts(page, reason: str):
+    """Dumps screenshot and HTML content when parsing fails in debug mode."""
+    global debug_dump_saved
+    if debug_dump_saved:
+        return
+
+    debug_dump_saved = True
+    screenshot_path = Path("scripts/debug_page.png")
+    html_path = Path("scripts/debug_page.html")
+
+    try:
+        page.screenshot(path=str(screenshot_path), full_page=True)
+        html_content = page.content()
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(html_content)
+        print(f"   🔍 [DEBUG] Dumped failure evidence ({reason}):")
+        print(f"      📸 Screenshot: {screenshot_path.resolve()}")
+        print(f"      📄 HTML dump:   {html_path.resolve()}")
+    except Exception as dump_err:
+        print(f"   ⚠️ [DEBUG] Could not save debug artifacts: {dump_err}")
 
 
 def scrape_flipkart_product(page, url: str, pincode: str) -> dict:
     """
-    Navigates to a Flipkart product page, sets delivery pincode,
-    and returns live price, stock status, and delivery text.
+    Navigates to a Flipkart product page with stealth bypass, sets delivery pincode,
+    and returns live price, stock status, delivery text, and success flag.
+    Uses 3-layer extraction:
+      Layer (a): application/ld+json Product schema
+      Layer (b): Primary DOM selectors + regex near <h1>
+      Layer (c): Pincode delivery input & stock indicator checks
     """
     result = {
         "price": None,
         "status": "out_of_stock",
         "delivery_text": None,
-        "success": False
+        "success": False,
+        "source": None
     }
 
+    response = None
     try:
-        page.goto(url, wait_until="domcontentloaded", timeout=45000)
-        time.sleep(2)
+        # Navigate to product page
+        response = page.goto(url, wait_until="domcontentloaded", timeout=40000)
+        time.sleep(random.uniform(1.8, 2.8))
 
-        # 1. Dismiss any login popup if present
+        http_status = response.status if response else "N/A"
+        page_title = page.title()
+
+        if IS_DEBUG_MODE:
+            print(f"   🔍 [DEBUG] HTTP: {http_status} | Title: {page_title[:60]}")
+
+        # 1. Dismiss any login popup / overlay if present
         try:
-            close_btn = page.locator('button._2KpZ6l._2doB4z, span[role="button"]:has-text("✕"), span._30XB9F')
+            close_btn = page.locator('button._2KpZ6l._2doB4z, span[role="button"]:has-text("✕"), span._30XB9F, button:has-text("✕")')
             if close_btn.count() > 0 and close_btn.first.is_visible():
-                close_btn.first.click(timeout=3000)
-                time.sleep(0.5)
+                close_btn.first.click(timeout=2000)
+                time.sleep(0.3)
         except Exception:
             pass
 
-        # 2. Extract Price
-        # Flipkart uses several class variants for the main product price
-        price_selectors = [
-            "div.Nx9bqj.CxhGGd",
-            "div._30jeq3._16Jk6d",
-            "div[class*='Nx9bqj'][class*='CxhGGd']",
-            "div[class*='_30jeq3']",
-            "span[class*='price']"
-        ]
+        # ----------------------------------------------------------------------
+        # LAYER (a): <script type="application/ld+json"> Product Schema
+        # ----------------------------------------------------------------------
+        try:
+            json_ld_elements = page.locator('script[type="application/ld+json"]')
+            count = json_ld_elements.count()
+            for i in range(count):
+                raw_script = json_ld_elements.nth(i).inner_text().strip()
+                if not raw_script:
+                    continue
+                try:
+                    parsed = json.loads(raw_script)
+                except Exception:
+                    continue
 
-        for sel in price_selectors:
-            locator = page.locator(sel)
-            if locator.count() > 0:
-                raw_text = locator.first.inner_text().strip()
-                extracted = clean_inr_price(raw_text)
-                if extracted > 1000:
-                    result["price"] = extracted
+                candidates = parsed if isinstance(parsed, list) else [parsed]
+                for item in candidates:
+                    items_to_check = [item]
+                    if "@graph" in item and isinstance(item["@graph"], list):
+                        items_to_check.extend(item["@graph"])
+
+                    for cand in items_to_check:
+                        cand_type = cand.get("@type", "")
+                        if cand_type in ("Product", "ItemPage") and "offers" in cand:
+                            offers = cand["offers"]
+                            offer_list = offers if isinstance(offers, list) else [offers]
+                            for off in offer_list:
+                                if "price" in off and off["price"]:
+                                    p_int = clean_inr_price(str(off["price"]))
+                                    if p_int >= 1000:
+                                        result["price"] = p_int
+                                        result["source"] = "schema.org"
+                                        avail = off.get("availability", "")
+                                        if "InStock" in avail:
+                                            result["status"] = "in_stock"
+                                        elif "OutOfStock" in avail or "SoldOut" in avail:
+                                            result["status"] = "out_of_stock"
+                                        break
+                                if result["price"]:
+                                    break
+                        if result["price"]:
+                            break
+                if result["price"]:
+                    break
+        except Exception as schema_err:
+            if IS_DEBUG_MODE:
+                print(f"   🔍 [DEBUG] Schema extraction notice: {schema_err}")
+
+        # ----------------------------------------------------------------------
+        # LAYER (b): DOM Selectors + Regex near <h1>
+        # ----------------------------------------------------------------------
+        if not result["price"]:
+            price_selectors = [
+                "div.Nx9bqj.CxhGGd",
+                "div._30jeq3._16Jk6d",
+                "div[class*='Nx9bqj'][class*='CxhGGd']",
+                "div[class*='Nx9bqj']",
+                "div[class*='_30jeq3']",
+                "span[class*='price']"
+            ]
+
+            for sel in price_selectors:
+                loc = page.locator(sel)
+                if loc.count() > 0:
+                    for k in range(min(3, loc.count())):
+                        try:
+                            txt = loc.nth(k).inner_text().strip()
+                            val = clean_inr_price(txt)
+                            if 5000 <= val <= 90000:
+                                result["price"] = val
+                                result["source"] = f"dom_selector ({sel})"
+                                break
+                        except Exception:
+                            continue
+                if result["price"]:
                     break
 
-        # 3. Enter delivery pincode to check location stock
-        pincode_input = page.locator('#pincodeInputId, input[placeholder*="pincode" i], input[placeholder*="PIN code" i]')
-        if pincode_input.count() > 0:
+        # Sibling/Container Regex near <h1>
+        if not result["price"]:
             try:
-                pincode_input.first.scroll_into_view_if_needed(timeout=3000)
-                pincode_input.first.click()
-                pincode_input.first.fill('')
-                pincode_input.first.type(pincode, delay=random.randint(50, 100))
-                time.sleep(0.5)
+                h1 = page.locator("h1")
+                if h1.count() > 0:
+                    # Look up to grand-parent container of h1
+                    parent_text = h1.first.locator("xpath=../..").inner_text()
+                    matches = re.findall(r'₹\s*([0-9]{1,2},[0-9]{2},[0-9]{3}|[0-9]{1,3},[0-9]{3})', parent_text)
+                    for m in matches:
+                        val = clean_inr_price(m)
+                        if 5000 <= val <= 90000:
+                            result["price"] = val
+                            result["source"] = "regex_near_h1"
+                            break
+            except Exception:
+                pass
 
-                # Click "Check" button or press Enter
-                check_btn = page.locator('span:has-text("Check"), span._2P_LDn, button:has-text("Check")')
-                if check_btn.count() > 0 and check_btn.first.is_visible():
-                    check_btn.first.click()
-                else:
-                    pincode_input.first.press('Enter')
-                time.sleep(2)
-            except Exception as e:
-                print(f"      Pincode input notice: {e}")
+        # Global body regex fallback if still unextracted
+        if not result["price"]:
+            try:
+                body_text = page.locator("body").inner_text()
+                matches = re.findall(r'₹\s*([0-9]{1,2},[0-9]{2},[0-9]{3}|[0-9]{1,3},[0-9]{3})', body_text)
+                for m in matches:
+                    val = clean_inr_price(m)
+                    if 10000 <= val <= 60000:
+                        result["price"] = val
+                        result["source"] = "body_regex"
+                        break
+            except Exception:
+                pass
 
-        # 4. Check Stock Availability
-        # Look for explicit out-of-stock badges
+        # ----------------------------------------------------------------------
+        # LAYER (c): Delivery Pincode Check & Stock State
+        # ----------------------------------------------------------------------
+        # Check explicit out-of-stock indicators
         out_of_stock_indicators = [
             "text='Currently Out of Stock'",
             "text='Sold Out'",
@@ -171,43 +312,82 @@ def scrape_flipkart_product(page, url: str, pincode: str) -> dict:
             "div._16FRp0",
             "div._1V9wT4"
         ]
+        is_sold_out = any(page.locator(ind).count() > 0 for ind in out_of_stock_indicators)
 
-        is_sold_out = False
-        for ind in out_of_stock_indicators:
-            if page.locator(ind).count() > 0:
-                is_sold_out = True
-                break
-
-        # Check for Buy Now / Add to Cart buttons
+        # Check for active Buy Now / Add to Cart buttons
         buy_now_btn = page.locator("button:has-text('Buy Now'), button:has-text('Add to Cart'), button._2KpZ6l._2U9uOA")
-        has_buy_button = buy_now_btn.count() > 0
-
-        # Extract delivery estimate text
-        delivery_locators = [
-            "div._3XINqE",
-            "span._1TPvTK",
-            "div:has-text('Delivery by')",
-            "div.hVvnXm"
-        ]
-        for d_sel in delivery_locators:
-            loc = page.locator(d_sel)
-            if loc.count() > 0:
-                d_text = loc.first.inner_text().strip()
-                if "Delivery" in d_text:
-                    result["delivery_text"] = d_text.split('\n')[0][:80]
-                    break
+        has_buy_button = buy_now_btn.count() > 0 and buy_now_btn.first.is_visible()
 
         if is_sold_out or not has_buy_button:
             result["status"] = "out_of_stock"
         else:
             result["status"] = "in_stock"
 
-        result["success"] = True
+        # Try setting target delivery pincode
+        try:
+            pincode_input = page.locator('#pincodeInputId, input[placeholder*="pincode" i], input[placeholder*="PIN code" i], input[placeholder*="Delivery" i]')
+            if pincode_input.count() > 0 and pincode_input.first.is_visible():
+                pincode_input.first.scroll_into_view_if_needed(timeout=2000)
+                pincode_input.first.click()
+                pincode_input.first.fill('')
+                pincode_input.first.type(pincode, delay=random.randint(40, 80))
+                time.sleep(0.3)
+
+                check_btn = page.locator('span:has-text("Check"), span._2P_LDn, button:has-text("Check")')
+                if check_btn.count() > 0 and check_btn.first.is_visible():
+                    check_btn.first.click()
+                else:
+                    pincode_input.first.press('Enter')
+                time.sleep(1.5)
+        except Exception as pin_err:
+            if IS_DEBUG_MODE:
+                print(f"   🔍 [DEBUG] Pincode entry note: {pin_err}")
+
+        # Extract delivery estimate text (strict validation)
+        delivery_locators = [
+            "div._3XINqE",
+            "span._1TPvTK",
+            "div:has-text('Delivery by')",
+            "div.hVvnXm",
+            "div:has-text('Delivery in')",
+            "div:has-text('Delivered by')"
+        ]
+        found_delivery = None
+        for d_sel in delivery_locators:
+            try:
+                loc = page.locator(d_sel)
+                count = loc.count()
+                for k in range(min(4, count)):
+                    raw_text = loc.nth(k).inner_text().strip()
+                    for line in raw_text.split('\n'):
+                        cleaned = line.strip()
+                        if is_valid_delivery_text(cleaned):
+                            found_delivery = cleaned[:80]
+                            break
+                    if found_delivery:
+                        break
+            except Exception:
+                continue
+            if found_delivery:
+                break
+
+        result["delivery_text"] = found_delivery
+
+        # Check if parsing succeeded
+        if result["price"] and result["price"] > 1000:
+            result["success"] = True
+        else:
+            if IS_DEBUG_MODE:
+                dump_debug_artifacts(page, "Price extraction failed (no price found)")
 
     except PlaywrightTimeoutError:
-        print(f"      ⏱️ Timeout loading {url}")
+        print(f"   ⏱️ Timeout loading {url}")
+        if IS_DEBUG_MODE:
+            dump_debug_artifacts(page, "Navigation timeout")
     except Exception as e:
-        print(f"      ⚠️ Scrape exception: {e}")
+        print(f"   ⚠️ Scrape exception: {e}")
+        if IS_DEBUG_MODE:
+            dump_debug_artifacts(page, f"Exception: {e}")
 
     return result
 
@@ -219,6 +399,8 @@ def main():
     print("=" * 70)
     print(f"🛒 SPECLEDGER FLIPKART DAILY SYNC · {today_str}")
     print(f"📍 Target Pincode: {TARGET_PINCODE} (Prefix: {PINCODE_PREFIX} - West Bengal / East)")
+    if IS_DEBUG_MODE:
+        print("🐞 DEBUG MODE: ENABLED (Will log page title/HTTP status and dump artifacts on failure)")
     print("=" * 70)
 
     # 1. Fetch phones from Supabase
@@ -259,26 +441,59 @@ def main():
         print("ℹ️ No active Flipkart product URLs (/p/) found. Update phone URLs in Supabase to start scraping.")
         return
 
-    # 3. Launch Playwright Headless Chromium
+    # 3. Launch Playwright Chromium with Stealth Arguments
     with sync_playwright() as p:
         browser = p.chromium.launch(
             headless=True,
             args=[
                 "--disable-blink-features=AutomationControlled",
                 "--no-sandbox",
-                "--disable-dev-shm-usage"
+                "--disable-dev-shm-usage",
+                "--disable-infobars",
+                "--window-position=0,0",
+                "--ignore-certificate-errors",
+                "--disable-extensions",
             ]
         )
 
+        chosen_ua = random.choice(USER_AGENTS)
+        chosen_vp = random.choice(VIEWPORTS)
+
         context = browser.new_context(
-            user_agent=random.choice(USER_AGENTS),
-            viewport=random.choice(VIEWPORTS),
+            user_agent=chosen_ua,
+            viewport=chosen_vp,
             locale="en-IN",
-            timezone_id="Asia/Kolkata"
+            timezone_id="Asia/Kolkata",
+            extra_http_headers={
+                "Accept-Language": "en-IN,en;q=0.9",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Sec-Fetch-Site": "same-origin",
+                "Sec-Fetch-Mode": "navigate",
+                "Sec-Fetch-Dest": "document",
+                "Upgrade-Insecure-Requests": "1"
+            }
         )
+
+        # Stealth evasion scripts: hide webdriver, mock chrome.runtime, plugins, languages
+        context.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined
+            });
+            window.chrome = {
+                runtime: {}
+            };
+            Object.defineProperty(navigator, 'plugins', {
+                get: () => [1, 2, 3, 4, 5]
+            });
+            Object.defineProperty(navigator, 'languages', {
+                get: () => ['en-IN', 'en', 'hi']
+            });
+        """)
+
         page = context.new_page()
 
         scraped_success = 0
+        scraped_failed = 0
         restock_alerts = 0
         price_drop_alerts = 0
 
@@ -295,19 +510,21 @@ def main():
             print(f"[{idx}/{len(active_phones)}] Scraping: {name}...")
             data = scrape_flipkart_product(page, url, TARGET_PINCODE)
 
-            if not data["success"] or data["price"] is None:
-                print(f"   ⚠️ Could not parse live data; keeping previous price ₹{old_price:,}")
-                price_to_record = old_price
-                new_status = prev_status
-                delivery_text = "Live check inconclusive"
-            else:
-                price_to_record = data["price"]
-                new_status = data["status"]
-                delivery_text = data["delivery_text"] or f"Status: {new_status}"
-                scraped_success += 1
+            # CRITICAL: If live parsing fails, log [FAIL] and skip ALL database writes
+            if not data["success"] or data["price"] is None or data["price"] <= 1000:
+                scraped_failed += 1
+                print(f"   ❌ [FAIL] Live parsing failed for '{name}'. Skipping ALL database updates (retaining existing price ₹{old_price:,}).\n")
+                continue
 
-            # Determine restock transition
-            # Transition: out_of_stock -> in_stock becomes 'back_in_stock'
+            price_to_record = data["price"]
+            new_status = data["status"]
+            delivery_text = data["delivery_text"] or (
+                f"In Stock for {TARGET_PINCODE}" if new_status != 'out_of_stock' else f"Unavailable for {TARGET_PINCODE}"
+            )
+            scraped_success += 1
+            print(f"   ✅ [OK] Live extracted: ₹{price_to_record:,} (Source: {data.get('source', 'live')}) | Stock: {new_status}")
+
+            # Determine restock transition (out_of_stock -> in_stock becomes 'back_in_stock')
             final_status = new_status
             if prev_status == 'out_of_stock' and new_status == 'in_stock':
                 final_status = 'back_in_stock'
@@ -378,7 +595,7 @@ def main():
             except Exception as e:
                 print(f"   ❌ Error updating pincode_availability: {e}")
 
-            print(f"   ✅ Recorded: ₹{price_to_record:,} · Status: {final_status} · Last seen: {last_in_stock_date}")
+            print(f"   💾 Saved: ₹{price_to_record:,} · Status: {final_status} · Last seen: {last_in_stock_date}")
 
             # Randomized delay between requests (5 to 11 seconds)
             if idx < len(active_phones):
@@ -391,7 +608,7 @@ def main():
 
     print("\n" + "=" * 70)
     print("✨ DAILY SYNC RUN COMPLETED")
-    print(f"📊 Phones Processed: {len(active_phones)} | Success: {scraped_success}")
+    print(f"📊 Phones Processed: {len(active_phones)} | Success: {scraped_success} | Failed/Skipped: {scraped_failed}")
     print(f"🚨 Restock Alerts: {restock_alerts} | 📉 Price Drop Alerts: {price_drop_alerts}")
     print("=" * 70)
 

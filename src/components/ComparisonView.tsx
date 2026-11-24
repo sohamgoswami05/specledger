@@ -695,7 +695,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                         <span className="font-bold text-app-accent tabular-nums">
                           {p.specs.refreshRate}
                         </span>
-                        {p.specs.peakBrightness && (
+                        {p.specs.peakBrightness && p.specs.peakBrightness !== '—' && (
                           <>
                             <span className="text-app-muted">·</span>
                             <span className="tabular-nums font-medium">{p.specs.peakBrightness}</span>
@@ -800,14 +800,21 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
             <div className="col-span-3 p-3 font-medium text-app-muted">Rear Primary Sensor</div>
             {[0, 1, 2].map((idx) => {
               const p = slotPhones[idx];
+              const rearPrimary =
+                typeof p?.specs.rearCamera === 'string'
+                  ? p.specs.rearCamera
+                  : p?.specs.rearCamera?.primary || '—';
+              const rearSecondary =
+                typeof p?.specs.rearCamera === 'object' ? p?.specs.rearCamera?.secondary : undefined;
+
               return (
                 <div key={`spec-rcam-${idx}`} className="col-span-3 p-3 text-app-text">
                   {p ? (
                     <>
-                      <span className="font-semibold block">{p.specs.rearCamera.primary}</span>
-                      {p.specs.rearCamera.secondary && (
+                      <span className="font-semibold block">{rearPrimary}</span>
+                      {rearSecondary && (
                         <span className="text-[11px] text-app-muted block mt-0.5">
-                          + {p.specs.rearCamera.secondary}
+                          + {rearSecondary}
                         </span>
                       )}
                     </>
@@ -830,12 +837,19 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
             <div className="col-span-3 p-3 font-medium text-app-muted">Front Selfie Camera</div>
             {[0, 1, 2].map((idx) => {
               const p = slotPhones[idx];
+              const frontRes =
+                typeof p?.specs.frontCamera === 'string'
+                  ? p.specs.frontCamera
+                  : p?.specs.frontCamera?.resolution || '—';
+              const frontFeat =
+                typeof p?.specs.frontCamera === 'object' ? p?.specs.frontCamera?.features : undefined;
+
               return (
                 <div key={`spec-fcam-${idx}`} className="col-span-3 p-3 text-app-text">
                   {p ? (
                     <>
-                      <span className="font-semibold block">{p.specs.frontCamera.resolution}</span>
-                      <span className="text-[10px] text-app-muted">{p.specs.frontCamera.features}</span>
+                      <span className="font-semibold block">{frontRes}</span>
+                      {frontFeat && <span className="text-[10px] text-app-muted">{frontFeat}</span>}
                     </>
                   ) : (
                     <span className="text-app-muted">—</span>
@@ -920,24 +934,39 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
               const p = slotPhones[idx];
               if (!p) return <div key={`spec-pros-${idx}`} className="col-span-3 p-3 text-app-muted">—</div>;
 
+              const hasPros = Array.isArray(p.pros) && p.pros.length > 0;
+              const hasCons = Array.isArray(p.cons) && p.cons.length > 0;
+
+              if (!hasPros && !hasCons) {
+                return (
+                  <div key={`spec-pros-${idx}`} className="col-span-3 p-3 text-app-muted text-[11px] italic">
+                    Detailed field reviews pending verification.
+                  </div>
+                );
+              }
+
               return (
                 <div key={`spec-pros-${idx}`} className="col-span-3 p-3 space-y-2 text-[11px]">
-                  <div>
-                    <span className="font-bold text-emerald-800 block mb-1">Pros:</span>
-                    <ul className="space-y-0.5 list-disc list-inside text-app-text">
-                      {p.pros.map((pro, i) => (
-                        <li key={i}>{pro}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="pt-1 border-t border-app-border-subtle">
-                    <span className="font-bold text-amber-800 block mb-1">Cons:</span>
-                    <ul className="space-y-0.5 list-disc list-inside text-app-muted">
-                      {p.cons.map((con, i) => (
-                        <li key={i}>{con}</li>
-                      ))}
-                    </ul>
-                  </div>
+                  {hasPros && (
+                    <div>
+                      <span className="font-bold text-emerald-800 block mb-1">Pros:</span>
+                      <ul className="space-y-0.5 list-disc list-inside text-app-text">
+                        {p.pros.map((pro, i) => (
+                          <li key={i}>{pro}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {hasCons && (
+                    <div className="pt-1 border-t border-app-border-subtle">
+                      <span className="font-bold text-amber-800 block mb-1">Cons:</span>
+                      <ul className="space-y-0.5 list-disc list-inside text-app-muted">
+                        {p.cons.map((con, i) => (
+                          <li key={i}>{con}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -956,10 +985,10 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                 <div key={`spec-offers-${idx}`} className="col-span-3 p-3 flex flex-col justify-between">
                   <div>
                     <p className="text-[11px] font-medium text-teal-900 leading-snug">
-                      {p.store.bankOffers}
+                      {p.store?.bankOffers || 'Instant Bank Discounts with Cards'}
                     </p>
                     <p className="text-[10px] text-app-muted mt-1">
-                      Seller: {p.store.seller}
+                      Seller: {p.store?.seller || 'Flipkart Verified Seller'}
                     </p>
                   </div>
                   <div className="mt-3">

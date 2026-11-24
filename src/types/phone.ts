@@ -81,4 +81,6 @@ export interface Phone {
   specs: PhoneSpecs;
   pros: string[];
   cons: string[];
+  isSpecialMention?: boolean;
+  specialMentionNote?: string;
 }

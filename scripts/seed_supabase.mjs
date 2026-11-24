@@ -1186,6 +1186,388 @@ export const RAW_CATALOG = [
       pros: ['Long-lasting 6500mAh battery', 'Smooth 120Hz refresh rate', 'Durable IP64 splash resistance'],
       cons: ['HD+ resolution rather than FHD+', '8MP front camera is modest']
     }
+  },
+  // --- 7 NEWLY ADDED MODELS (VIVO, REALME, ONEPLUS) ---
+  {
+    id: 'realme-p4s-5g-8-128',
+    brand: 'Realme',
+    model_name: 'Realme P4s 5G',
+    ram_storage_variant: '8GB / 128GB',
+    release_date: '2026-09-01',
+    launch_price_inr: 32999,
+    current_price_inr: 32999,
+    lowest_ever: 31999,
+    highest_ever: 32999,
+    is_newer_model: true,
+    is_special_mention: true,
+    special_mention_note: 'Just above ₹30k right now — worth tracking for bank offers and sub-₹30k sale drops.',
+    flipkart_url: 'https://www.flipkart.com/realme-p4s-5g/p/itmcb2e7e552a5ef?pid=MOBHPBHATYTBGZXN',
+    image_url: 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=500&auto=format&fit=crop&q=80',
+    stock_status: 'in_stock',
+    last_in_stock_date: '2026-11-24',
+    delivery_text: 'Delivery by 27 Nov, Fri',
+    forecast: { signal: 'wait', confidence: 0.8 },
+    specs: {
+      releaseDate: '01 Sep, 2026',
+      chipset: 'MediaTek Dimensity 7400 (2.6 GHz)',
+      cpuDetails: 'Octa-core 2.6 GHz TSMC 4nm processor',
+      antutuScore: '890,000',
+      ram: '8 GB LPDDR4X',
+      ramType: 'LPDDR4X',
+      storage: '128 GB',
+      storageType: 'UFS 3.1',
+      expandableStorage: 'Yes, up to 1 TB',
+      displaySize: '6.78 inches',
+      displayType: 'FHD+ AMOLED (6500 nits peak, 450 ppi)',
+      resolution: '2400 x 1080 px (FHD+)',
+      refreshRate: '120 Hz',
+      peakBrightness: '6500 nits',
+      rearCamera: {
+        primary: '50 MP with OIS',
+        secondary: '8 MP Ultra-Wide',
+        features: '4K video, HDR, Super Nightscape'
+      },
+      frontCamera: {
+        resolution: '16 MP',
+        features: 'Portrait mode, AI Beauty'
+      },
+      batteryCapacity: '8000 mAh',
+      chargingSpeed: 'SuperVOOC Fast Charging',
+      wirelessCharging: 'No',
+      os: 'Android 16',
+      fiveGBands: 'n1/n3/n5/n8/n28A/n41/n77/n78',
+      weightGrams: 205,
+      thicknessMm: 8.5,
+      bankOffers: '₹2,000 Instant Discount on Credit Cards',
+      seller: 'OmniTechRetail (Flipkart Assured)',
+      pros: ['Massive 8000 mAh battery endurance', 'Blazing 6500 nits peak brightness AMOLED'],
+      cons: ['Currently positioned just above ₹30k baseline without sales']
+    }
+  },
+  {
+    id: 'realme-p4x-5g-8-128',
+    brand: 'Realme',
+    model_name: 'Realme P4x 5G',
+    ram_storage_variant: '8GB / 128GB',
+    release_date: '2025-12-04',
+    launch_price_inr: 16999,
+    current_price_inr: 23999,
+    lowest_ever: 16999,
+    highest_ever: 24999,
+    is_newer_model: true,
+    flipkart_url: 'https://www.flipkart.com/realme-p4x-5g-matte-silver-128-gb/p/itm575b1540859e4',
+    image_url: 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=500&auto=format&fit=crop&q=80',
+    stock_status: 'in_stock',
+    last_in_stock_date: '2026-11-24',
+    delivery_text: 'Delivery by 26 Nov, Thu',
+    forecast: { signal: 'buy', confidence: 0.75 },
+    specs: {
+      releaseDate: '04 Dec, 2025',
+      chipset: 'MediaTek Dimensity 7400 Ultra (4nm, 2.6 GHz)',
+      cpuDetails: 'Octa-core 4nm processor',
+      antutuScore: '820,000',
+      ram: '8 GB LPDDR4X',
+      ramType: 'LPDDR4X',
+      storage: '128 GB',
+      storageType: 'UFS 3.1 (Expandable up to 2TB)',
+      expandableStorage: 'Yes, up to 2 TB',
+      displaySize: '6.72 inches',
+      displayType: 'FHD+ 144Hz IPS LCD',
+      resolution: '2400 x 1080 px (FHD+)',
+      refreshRate: '144 Hz',
+      peakBrightness: '950 nits',
+      rearCamera: {
+        primary: '50 MP AI Primary',
+        secondary: '2 MP Portrait',
+        features: '1080p 60fps video, Night mode'
+      },
+      frontCamera: {
+        resolution: '8 MP',
+        features: 'Portrait mode, HDR'
+      },
+      batteryCapacity: '7000 mAh',
+      chargingSpeed: '45W SuperVOOC',
+      wirelessCharging: 'No',
+      os: 'Android 15 (2 OS / 3 Security Updates)',
+      fiveGBands: 'n1/n3/n5/n8/n28A/n41/n77/n78',
+      weightGrams: 200,
+      thicknessMm: 8.4,
+      bankOffers: '₹1,000 Instant Discount with Bank Cards',
+      seller: 'RetailNet (Flipkart Assured)',
+      pros: ['Class-leading 7000 mAh battery', 'Fluid 144Hz refresh rate'],
+      cons: ['LCD panel instead of AMOLED', '8 MP selfie camera']
+    }
+  },
+  {
+    id: 'vivo-t4-5g-8-256',
+    brand: 'Vivo',
+    model_name: 'Vivo T4 5G',
+    ram_storage_variant: '8GB / 256GB',
+    release_date: '2025-04-22',
+    launch_price_inr: 27999,
+    current_price_inr: 24999,
+    lowest_ever: 23999,
+    highest_ever: 27999,
+    is_newer_model: true,
+    flipkart_url: 'https://www.flipkart.com/vivo-t4-5g-phantom-grey-256-gb/p/itmc2634fd4daeb9',
+    image_url: 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=500&auto=format&fit=crop&q=80',
+    stock_status: 'in_stock',
+    last_in_stock_date: '2026-11-24',
+    delivery_text: 'Delivery by 27 Nov, Fri',
+    forecast: { signal: 'buy', confidence: 0.85 },
+    specs: {
+      releaseDate: '22 Apr, 2025',
+      chipset: 'Qualcomm Snapdragon 7s Gen 3 (2.5 GHz)',
+      cpuDetails: 'Octa-core 2.5 GHz Qualcomm 4nm',
+      antutuScore: '835,000',
+      ram: '8 GB',
+      ramType: 'LPDDR4X',
+      storage: '256 GB',
+      storageType: 'UFS 2.2',
+      expandableStorage: 'Yes, up to 1 TB',
+      displaySize: '6.77 inches',
+      displayType: 'Quad-Curved 120Hz AMOLED',
+      resolution: '2400 x 1080 px (FHD+)',
+      refreshRate: '120 Hz',
+      peakBrightness: '5000 nits',
+      rearCamera: {
+        primary: '50 MP OIS Primary',
+        secondary: '2 MP Bokeh',
+        features: '4K video, Super Night mode'
+      },
+      frontCamera: {
+        resolution: '32 MP',
+        features: 'Portrait mode, 4K selfie video'
+      },
+      batteryCapacity: '7300 mAh',
+      chargingSpeed: '90W FlashCharge',
+      wirelessCharging: 'No',
+      os: 'Funtouch OS 15 (Android 15) · IP65',
+      fiveGBands: 'n1/n3/n5/n8/n28A/n41/n77/n78',
+      weightGrams: 198,
+      thicknessMm: 8.2,
+      bankOffers: '₹1,500 Instant Discount with Bank Cards',
+      seller: 'OmniTechRetail (Flipkart Assured)',
+      pros: ['Enormous 7300 mAh battery with 90W charging', '5000 nits Quad-Curved AMOLED'],
+      cons: ['UFS 2.2 storage rather than UFS 3.1']
+    }
+  },
+  {
+    id: 'vivo-t4-pro-5g-8-128',
+    brand: 'Vivo',
+    model_name: 'Vivo T4 Pro 5G',
+    ram_storage_variant: '8GB / 128GB',
+    release_date: '2025-08-26',
+    launch_price_inr: 27999,
+    current_price_inr: 27999,
+    lowest_ever: 25999,
+    highest_ever: 27999,
+    is_newer_model: true,
+    flipkart_url: 'https://www.flipkart.com/vivo-t4-pro-5g-blaze-gold-256-gb/p/itm4da1824b696d9',
+    image_url: 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=500&auto=format&fit=crop&q=80',
+    stock_status: 'in_stock',
+    last_in_stock_date: '2026-11-24',
+    delivery_text: 'Delivery by 26 Nov, Thu',
+    forecast: { signal: 'wait', confidence: 0.7 },
+    specs: {
+      releaseDate: '26 Aug, 2025',
+      chipset: 'Qualcomm Snapdragon 7 Gen 4 (2.8 GHz)',
+      cpuDetails: 'Octa-core 2.8 GHz 4nm processor',
+      antutuScore: '895,000',
+      ram: '8 GB',
+      ramType: 'LPDDR4X',
+      storage: '128 GB',
+      storageType: 'UFS 2.2',
+      expandableStorage: 'Yes, up to 1 TB',
+      displaySize: '6.77 inches',
+      displayType: 'Curved AMOLED Display',
+      resolution: '2400 x 1080 px (FHD+)',
+      refreshRate: '120 Hz',
+      peakBrightness: '4500 nits',
+      rearCamera: {
+        primary: '50 MP Sony IMX882 OIS',
+        secondary: '50 MP 3x Periscope OIS',
+        tertiary: '2 MP Bokeh',
+        features: '3x Optical Zoom, 4K 60fps video, Studio Portrait'
+      },
+      frontCamera: {
+        resolution: '32 MP',
+        features: '4K video, AI Face Retouch'
+      },
+      batteryCapacity: '6500 mAh',
+      chargingSpeed: '90W FlashCharge',
+      wirelessCharging: 'No',
+      os: 'Funtouch OS 15 (Android 15)',
+      fiveGBands: 'n1/n3/n5/n8/n28A/n41/n77/n78',
+      weightGrams: 195,
+      thicknessMm: 8.1,
+      bankOffers: '₹2,000 Instant Discount with HDFC/ICICI Cards',
+      seller: 'OmniTechRetail (Flipkart Assured)',
+      pros: ['50 MP 3x periscope zoom lens under ₹30k', '6500 mAh battery with 90W fast charging'],
+      cons: ['Mono speaker tradeoff', 'UFS 2.2 storage standard']
+    }
+  },
+  {
+    id: 'vivo-y400-pro-5g-8-128',
+    brand: 'Vivo',
+    model_name: 'Vivo Y400 Pro 5G',
+    ram_storage_variant: '8GB / 128GB',
+    release_date: '2025-06-20',
+    launch_price_inr: 29999,
+    current_price_inr: 25991,
+    lowest_ever: 24999,
+    highest_ever: 29999,
+    is_newer_model: true,
+    flipkart_url: 'https://www.flipkart.com/vivo-y400-pro-5g-nebula-purple-128-gb/p/itme20aaec2a68e9?pid=MOBHCN9UFZDEHEMZ',
+    image_url: 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=500&auto=format&fit=crop&q=80',
+    stock_status: 'in_stock',
+    last_in_stock_date: '2026-11-24',
+    delivery_text: 'Delivery by 27 Nov, Fri',
+    forecast: { signal: 'buy', confidence: 0.8 },
+    specs: {
+      releaseDate: '20 Jun, 2025',
+      chipset: 'MediaTek Dimensity 7300 (2.5 GHz)',
+      cpuDetails: 'Octa-core 2.5 GHz TSMC 4nm',
+      antutuScore: '725,000',
+      ram: '8 GB LPDDR4X',
+      ramType: 'LPDDR4X',
+      storage: '128 GB',
+      storageType: 'UFS 3.1',
+      expandableStorage: 'Yes, up to 1 TB',
+      displaySize: '6.77 inches',
+      displayType: 'AMOLED Display (4500 nits peak)',
+      resolution: '2400 x 1080 px (FHD+)',
+      refreshRate: '120 Hz',
+      peakBrightness: '4500 nits',
+      rearCamera: {
+        primary: '50 MP Sony IMX882',
+        secondary: '2 MP Bokeh',
+        features: '4K video, Wedding Portrait Algorithm'
+      },
+      frontCamera: {
+        resolution: '32 MP (4K Video)',
+        features: '4K video, Aura Light Flash'
+      },
+      batteryCapacity: '5500 mAh',
+      chargingSpeed: '90W FlashCharge (50% in 19 mins)',
+      wirelessCharging: 'No',
+      os: 'Funtouch OS 14 (Android 14) · IP65',
+      fiveGBands: 'n1/n3/n5/n8/n28A/n41/n77/n78',
+      weightGrams: 188,
+      thicknessMm: 7.9,
+      bankOffers: '₹1,500 Instant Discount with Bank Cards',
+      seller: 'RetailNet (Flipkart Assured)',
+      pros: ['Slim 7.9mm profile with IP65 water resistance', '90W FlashCharge speed'],
+      cons: ['Secondary camera is only 2 MP']
+    }
+  },
+  {
+    id: 'oneplus-nord-4-5g-12-256',
+    brand: 'OnePlus',
+    model_name: 'OnePlus Nord 4 5G',
+    ram_storage_variant: '12GB / 256GB',
+    release_date: '2024-07-16',
+    launch_price_inr: 35999,
+    current_price_inr: 29321,
+    lowest_ever: 28999,
+    highest_ever: 35999,
+    is_newer_model: false,
+    flipkart_url: 'https://www.flipkart.com/oneplus-nord-4-5g-obsidian-midnight-256-gb/p/itmed83e7926e3e5',
+    image_url: 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=500&auto=format&fit=crop&q=80',
+    stock_status: 'in_stock',
+    last_in_stock_date: '2026-11-24',
+    delivery_text: 'Delivery by 26 Nov, Thu',
+    forecast: { signal: 'buy', confidence: 0.9 },
+    specs: {
+      releaseDate: '16 Jul, 2024',
+      chipset: 'Qualcomm Snapdragon 7+ Gen 3 (2.8 GHz)',
+      cpuDetails: 'Octa-core 2.8 GHz TSMC 4nm flagship architecture',
+      antutuScore: '1,150,000',
+      ram: '12 GB LPDDR5X',
+      ramType: 'LPDDR5X',
+      storage: '256 GB',
+      storageType: 'UFS 4.0',
+      expandableStorage: 'No',
+      displaySize: '6.74 inches',
+      displayType: '1.5K 120Hz AMOLED (2150 nits peak)',
+      resolution: '2772 x 1240 px (1.5K)',
+      refreshRate: '120 Hz',
+      peakBrightness: '2150 nits',
+      rearCamera: {
+        primary: '50 MP Sony LYTIA OIS',
+        secondary: '8 MP Ultra-Wide',
+        features: '4K 60fps video recording, Pro mode'
+      },
+      frontCamera: {
+        resolution: '16 MP',
+        features: 'Portrait mode, Screen Flash'
+      },
+      batteryCapacity: '5500 mAh',
+      chargingSpeed: '100W SUPERVOOC',
+      wirelessCharging: 'No',
+      os: 'OxygenOS 14.1 (Android 14)',
+      fiveGBands: 'n1/n3/n5/n8/n28A/n41/n77/n78',
+      weightGrams: 199,
+      thicknessMm: 8.0,
+      bankOffers: '₹2,000 Instant Discount with Bank Cards',
+      seller: 'OmniTechRetail (Flipkart Assured)',
+      pros: ['All-metal unibody construction', 'Flagship Snapdragon 7+ Gen 3 with UFS 4.0 storage'],
+      cons: ['No expandable microSD card slot']
+    }
+  },
+  {
+    id: 'oneplus-n6-5g-6-128',
+    brand: 'OnePlus',
+    model_name: 'OnePlus N6 5G',
+    ram_storage_variant: '6GB / 128GB',
+    release_date: '2026-08-01',
+    launch_price_inr: 33999,
+    current_price_inr: 26590,
+    lowest_ever: 25999,
+    highest_ever: 33999,
+    is_newer_model: true,
+    flipkart_url: 'https://www.flipkart.com/oneplus-n6-5g-midnight-green-128-gb/p/itm73a3c7e824695',
+    image_url: 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=500&auto=format&fit=crop&q=80',
+    stock_status: 'in_stock',
+    last_in_stock_date: '2026-11-24',
+    delivery_text: 'Delivery by 27 Nov, Fri',
+    forecast: { signal: 'buy', confidence: 0.8 },
+    specs: {
+      releaseDate: '01 Aug, 2026',
+      chipset: 'Octa-Core 2.4 GHz 5G Processor',
+      cpuDetails: 'Octa-core 2.4 GHz 5G architecture',
+      antutuScore: '780,000',
+      ram: '6 GB',
+      ramType: 'LPDDR4X',
+      storage: '128 GB',
+      storageType: 'UFS 2.2',
+      expandableStorage: 'Yes, up to 1 TB',
+      displaySize: '6.8 inches',
+      displayType: '120Hz Fluid AMOLED',
+      resolution: '2400 x 1080 px (FHD+)',
+      refreshRate: '120 Hz',
+      peakBrightness: '1300 nits',
+      rearCamera: {
+        primary: '50 MP Primary Camera',
+        secondary: '2 MP Depth',
+        features: 'HDR, Night mode, 1080p video'
+      },
+      frontCamera: {
+        resolution: '16 MP',
+        features: 'Portrait mode, Screen Flash'
+      },
+      batteryCapacity: '8000 mAh',
+      chargingSpeed: 'Fast Charging',
+      wirelessCharging: 'No',
+      os: 'OxygenOS (Android 16)',
+      fiveGBands: 'n1/n3/n5/n8/n28A/n41/n77/n78',
+      weightGrams: 202,
+      thicknessMm: 8.3,
+      bankOffers: '₹1,500 Instant Discount with Bank Cards',
+      seller: 'RetailNet (Flipkart Assured)',
+      pros: ['Long-lasting 8000 mAh battery endurance', 'Large 6.8-inch display'],
+      cons: ['6 GB RAM base model']
+    }
   }
 ];
 
@@ -1294,22 +1676,49 @@ export function generateRealisticStepCurve(
 }
 
 export async function runFullSeed() {
-  console.log(`\n🚀 Seeding ${RAW_CATALOG.length} Indian smartphones under ₹30,000 into Supabase...`);
+  console.log(`\n🚀 Seeding ${RAW_CATALOG.length} Indian smartphones under ₹30,000 / special mentions into Supabase...`);
 
-  const phonesPayload = RAW_CATALOG.map((p) => ({
-    id: p.id,
-    brand: p.brand,
-    model_name: p.model_name,
-    ram_storage_variant: p.ram_storage_variant,
-    release_date: p.release_date,
-    launch_price_inr: p.launch_price_inr,
-    current_price_inr: p.current_price_inr,
-    flipkart_url: p.flipkart_url,
-    amazon_url: null,
-    image_url: p.image_url,
-    specs: p.specs,
-    forecast: p.forecast
-  }));
+  // Query existing phones to preserve real /p/ URLs and special mentions
+  const { data: existingRows } = await supabase
+    .from('phones')
+    .select('id, flipkart_url, is_special_mention, special_mention_note');
+  const existingPUrls = new Map();
+  if (existingRows) {
+    existingRows.forEach((r) => {
+      if (r.flipkart_url && r.flipkart_url.includes('/p/')) {
+        existingPUrls.set(r.id, r.flipkart_url);
+      }
+    });
+  }
+
+  function sanitizeUrl(url) {
+    if (!url) return url;
+    return url
+      .replace('flipkarrt.com', 'flipkart.com')
+      .replace('flipkart.coom', 'flipkart.com')
+      .replace('seaarch', 'search')
+      .replace('searcch', 'search');
+  }
+
+  const phonesPayload = RAW_CATALOG.map((p) => {
+    const finalUrl = existingPUrls.get(p.id) || sanitizeUrl(p.flipkart_url);
+    return {
+      id: p.id,
+      brand: p.brand,
+      model_name: p.model_name,
+      ram_storage_variant: p.ram_storage_variant,
+      release_date: p.release_date,
+      launch_price_inr: p.launch_price_inr,
+      current_price_inr: p.current_price_inr,
+      flipkart_url: finalUrl,
+      amazon_url: null,
+      image_url: p.image_url,
+      specs: p.specs,
+      forecast: p.forecast,
+      is_special_mention: Boolean(p.is_special_mention),
+      special_mention_note: p.special_mention_note || null,
+    };
+  });
 
   const pincodePayload = RAW_CATALOG.map((p) => ({
     phone_id: p.id,

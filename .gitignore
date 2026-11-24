@@ -25,3 +25,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python & Playwright debug artifacts
+__pycache__/
+*.py[cod]
+scripts/__pycache__/
+scripts/debug_page.png
+scripts/debug_page.html
+

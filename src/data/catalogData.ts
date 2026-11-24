@@ -15,6 +15,8 @@ export interface RawPhoneItem {
   last_in_stock_date: string;
   delivery_text: string;
   forecast: { signal: 'buy' | 'wait'; confidence: number };
+  is_special_mention?: boolean;
+  special_mention_note?: string;
   specs: {
     releaseDate: string;
     chipset: string;
@@ -181,6 +183,8 @@ export const RAW_CATALOG: RawPhoneItem[] = [
     last_in_stock_date: '2026-11-12',
     delivery_text: 'Currently unavailable in 700034',
     forecast: { signal: 'buy', confidence: 0.94 },
+    is_special_mention: true,
+    special_mention_note: "Former ₹34k flagship killer with MediaTek Dimensity 9000 (1M+ AnTuTu). Exceptional value when in stock.",
     specs: {
       releaseDate: '05 Jul, 2023',
       chipset: 'MediaTek Dimensity 9000 (4nm)',
@@ -895,6 +899,8 @@ export const RAW_CATALOG: RawPhoneItem[] = [
     last_in_stock_date: '2026-11-24',
     delivery_text: 'Delivery by 26 Nov, Thu',
     forecast: { signal: 'buy', confidence: 0.95 },
+    is_special_mention: true,
+    special_mention_note: "Massive 10,001 mAh titan battery + 100W charging; launched above ₹30k, now trading at ₹26,700 floor.",
     specs: {
       releaseDate: '02 Oct, 2026',
       chipset: 'MediaTek Dimensity 7400 Ultra',
@@ -1204,6 +1210,119 @@ export const RAW_CATALOG: RawPhoneItem[] = [
       seller: 'OmniTechRetail (Flipkart Assured)',
       pros: ['Long-lasting 6500mAh battery', 'Smooth 120Hz refresh rate', 'Durable IP64 splash resistance'],
       cons: ['HD+ resolution rather than FHD+', '8MP front camera is modest']
+    }
+  },
+  {
+    id: 'oneplus-nord-4-8-256',
+    brand: 'OnePlus',
+    model_name: 'OnePlus Nord 4 5G',
+    ram_storage_variant: '8GB / 256GB',
+    release_date: '2024-07-16',
+    launch_price_inr: 32999,
+    current_price_inr: 31999,
+    lowest_ever: 29999,
+    highest_ever: 32999,
+    is_newer_model: true,
+    flipkart_url: 'https://www.flipkart.com/search?q=OnePlus+Nord+4+5G',
+    image_url: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500&auto=format&fit=crop&q=80',
+    stock_status: 'in_stock',
+    last_in_stock_date: '2026-11-24',
+    delivery_text: 'Delivery by 26 Nov, Thu',
+    forecast: { signal: 'wait', confidence: 0.88 },
+    is_special_mention: true,
+    special_mention_note: "Premium all-metal unibody with Snapdragon 7+ Gen 3. Normally ₹32k+; top pick if bank offers bring it under ₹30k.",
+    specs: {
+      releaseDate: '16 Jul, 2024',
+      chipset: 'Qualcomm Snapdragon 7+ Gen 3 (4nm)',
+      cpuDetails: 'Octa-core 1x 2.8GHz Cortex-X4 + 4x 2.6GHz Cortex-A720 + 3x 1.9GHz Cortex-A520',
+      antutuScore: '1,380,000',
+      ram: '8 GB',
+      ramType: 'LPDDR5X',
+      storage: '256 GB',
+      storageType: 'UFS 4.0',
+      expandableStorage: 'No',
+      displaySize: '6.74 inches (17.12 cm)',
+      displayType: 'Super Fluid AMOLED 1.5K, 120Hz Ultra HDR',
+      resolution: '2772 x 1240 px (1.5K)',
+      refreshRate: '120 Hz',
+      peakBrightness: '2150 nits',
+      rearCamera: {
+        primary: '50 MP Sony LYT-600 with OIS (f/1.8)',
+        secondary: '8 MP Ultra-Wide (112° FoV)',
+        features: '4K video at 60fps, Ultra Steady Pro'
+      },
+      frontCamera: {
+        resolution: '16 MP (f/2.4)',
+        features: '1080p at 30fps with EIS'
+      },
+      batteryCapacity: '5500 mAh',
+      chargingSpeed: '100W SUPERVOOC (100% in 28 mins)',
+      wirelessCharging: 'No',
+      os: 'OxygenOS 14.1 on Android 14 (4 OS Upgrades Guaranteed)',
+      fiveGBands: 'n1/n3/n5/n8/n28A/n41/n77/n78',
+      weightGrams: 199,
+      thicknessMm: 7.99,
+      bankOffers: '₹2,000 Instant Discount with ICICI/OneCard',
+      seller: 'OmniTechRetail (Flipkart Assured)',
+      pros: ['Flagship all-metal unibody construction', 'Snapdragon 7+ Gen 3 near-flagship performance', '6 years of guaranteed software security'],
+      cons: ['No 3.5mm headphone jack', 'No expandable MicroSD storage']
+    }
+  },
+  {
+    id: 'samsung-galaxy-a55-8-128',
+    brand: 'Samsung',
+    model_name: 'Samsung Galaxy A55 5G',
+    ram_storage_variant: '8GB / 128GB',
+    release_date: '2024-03-11',
+    launch_price_inr: 39999,
+    current_price_inr: 33999,
+    lowest_ever: 29999,
+    highest_ever: 39999,
+    is_newer_model: true,
+    flipkart_url: 'https://www.flipkart.com/search?q=Samsung+Galaxy+A55+5G',
+    image_url: 'https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=500&auto=format&fit=crop&q=80',
+    stock_status: 'in_stock',
+    last_in_stock_date: '2026-11-24',
+    delivery_text: 'Delivery by 26 Nov, Thu',
+    forecast: { signal: 'wait', confidence: 0.85 },
+    is_special_mention: true,
+    special_mention_note: "Flagship metal frame + IP67 water resistance + Knox Vault. Benchmark model to watch for sub-₹30k festival sales.",
+    specs: {
+      releaseDate: '11 Mar, 2024',
+      chipset: 'Samsung Exynos 1480 (4nm) with AMD Xclipse 530 GPU',
+      cpuDetails: 'Octa-core 4x 2.75GHz Cortex-A78 + 4x 2.0GHz Cortex-A55',
+      antutuScore: '715,000',
+      ram: '8 GB',
+      ramType: 'LPDDR5',
+      storage: '128 GB',
+      storageType: 'UFS 3.1',
+      expandableStorage: 'Yes, up to 1 TB via MicroSD Slot',
+      displaySize: '6.6 inches (16.76 cm)',
+      displayType: 'Super AMOLED FHD+, HDR10+, Vision Booster',
+      resolution: '2340 x 1080 px (FHD+)',
+      refreshRate: '120 Hz',
+      peakBrightness: '1000 nits High Brightness Mode',
+      rearCamera: {
+        primary: '50 MP with OIS (f/1.8)',
+        secondary: '12 MP Ultra-Wide (123° FoV)',
+        tertiary: '5 MP Macro Lens',
+        features: '4K video with VDIS, Super HDR'
+      },
+      frontCamera: {
+        resolution: '32 MP (f/2.2)',
+        features: '4K video recording, Bokeh Portrait'
+      },
+      batteryCapacity: '5000 mAh',
+      chargingSpeed: '25W Super Fast Charging',
+      wirelessCharging: 'No',
+      os: 'One UI 6.1 on Android 14 (4 OS updates)',
+      fiveGBands: 'n1/n3/n5/n7/n8/n26/n28/n66/n77/n78',
+      weightGrams: 213,
+      thicknessMm: 8.2,
+      bankOffers: '₹3,000 Instant Discount with HDFC/SBI Cards',
+      seller: 'OmniTechRetail (Flipkart Assured)',
+      pros: ['Premium metal rail & Gorilla Glass Victus+ front/back', 'IP67 water and dust resistance rating', 'Hardware-isolated Samsung Knox Vault security'],
+      cons: ['25W charging is slower than competition', 'Charger not included in box']
     }
   }
 ];

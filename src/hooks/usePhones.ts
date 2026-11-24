@@ -122,6 +122,111 @@ export function usePhones(activeComparedIds: string[] = []): UsePhonesResult {
         const fallback = findFallback(row.id);
         const rawSpecs = row.specs && Object.keys(row.specs).length > 0 ? row.specs : fallback?.specs;
 
+        // Parse rearCamera (can be string or object)
+        let rearCamera: Phone['specs']['rearCamera'];
+        if (rawSpecs?.rearCamera) {
+          if (typeof rawSpecs.rearCamera === 'string') {
+            const parts = rawSpecs.rearCamera.split('+').map((s: string) => s.trim());
+            rearCamera = {
+              primary: parts[0] || '50 MP with OIS',
+              secondary: parts[1] || undefined,
+              tertiary: parts[2] || undefined,
+              features: rawSpecs.cameraFeatures || 'HDR, Night mode, 4K video recording',
+            };
+          } else {
+            rearCamera = {
+              primary: rawSpecs.rearCamera.primary || '50 MP with OIS',
+              secondary: rawSpecs.rearCamera.secondary,
+              tertiary: rawSpecs.rearCamera.tertiary,
+              features: rawSpecs.rearCamera.features || '4K video recording, Night mode',
+            };
+          }
+        } else {
+          rearCamera = fallback?.specs.rearCamera || {
+            primary: '50 MP with OIS',
+            secondary: '8 MP Ultra-Wide',
+            features: '4K video recording, Night mode',
+          };
+        }
+
+        // Parse frontCamera (can be string or object)
+        let frontCamera: Phone['specs']['frontCamera'];
+        if (rawSpecs?.frontCamera) {
+          if (typeof rawSpecs.frontCamera === 'string') {
+            frontCamera = {
+              resolution: rawSpecs.frontCamera,
+              features: rawSpecs.frontCameraFeatures || 'Portrait mode, Screen Flash',
+            };
+          } else {
+            frontCamera = {
+              resolution: rawSpecs.frontCamera.resolution || '16 MP',
+              features: rawSpecs.frontCamera.features || 'Portrait mode, Screen Flash',
+            };
+          }
+        } else {
+          frontCamera = fallback?.specs.frontCamera || {
+            resolution: '16 MP',
+            features: 'Portrait mode, Screen Flash',
+          };
+        }
+
+        // Display parsing
+        const displayRaw = typeof rawSpecs?.display === 'string' ? rawSpecs.display : '';
+        const displaySize =
+          rawSpecs?.displaySize ||
+          (displayRaw.match(/[\d.]+\s*(?:inch|-inch|")/i)?.[0]?.replace(/-/g, ' ') ||
+            fallback?.specs.displaySize ||
+            '6.7 inches');
+        const displayType =
+          rawSpecs?.displayType ||
+          (displayRaw.includes('Quad-Curved')
+            ? 'Quad-Curved AMOLED'
+            : displayRaw.includes('Curved')
+            ? 'Curved AMOLED'
+            : displayRaw.includes('AMOLED')
+            ? 'AMOLED Display'
+            : displayRaw.includes('LCD')
+            ? 'IPS LCD Display'
+            : fallback?.specs.displayType || 'AMOLED Display');
+        const refreshRate =
+          rawSpecs?.refreshRate ||
+          (displayRaw.match(/\d+\s*Hz/i)?.[0] || fallback?.specs.refreshRate || '120 Hz');
+        const peakBrightness =
+          rawSpecs?.peakBrightness ||
+          (displayRaw.match(/\d+\s*nits(?:\s*peak)?/i)?.[0] || fallback?.specs.peakBrightness || '—');
+        const resolution =
+          rawSpecs?.resolution ||
+          (displayRaw.includes('1.5K')
+            ? '2772 x 1240 px (1.5K)'
+            : fallback?.specs.resolution || '2400 x 1080 px (FHD+)');
+
+        // Battery & Charging
+        const batteryCapacity =
+          rawSpecs?.batteryCapacity || rawSpecs?.battery || fallback?.specs.batteryCapacity || '5000 mAh';
+        const chargingSpeed =
+          rawSpecs?.chargingSpeed || rawSpecs?.charging || fallback?.specs.chargingSpeed || '45W Fast Charging';
+        const antutuScore =
+          rawSpecs?.antutuScore || rawSpecs?.antutu || fallback?.specs.antutuScore || '—';
+
+        // Pros & Cons
+        const pros =
+          Array.isArray(rawSpecs?.pros) && rawSpecs.pros.length > 0
+            ? rawSpecs.pros
+            : Array.isArray(fallback?.pros) && fallback.pros.length > 0
+            ? fallback.pros
+            : ['Strong performance-to-price ratio', 'High refresh-rate display'];
+        const cons =
+          Array.isArray(rawSpecs?.cons) && rawSpecs.cons.length > 0
+            ? rawSpecs.cons
+            : Array.isArray(fallback?.cons) && fallback.cons.length > 0
+            ? fallback.cons
+            : ['Competitive segment tradeoffs'];
+
+        const bankOffers =
+          rawSpecs?.bankOffers || fallback?.store.bankOffers || 'Instant Bank Discounts with Cards';
+        const seller =
+          rawSpecs?.seller || fallback?.store.seller || 'OmniTechRetail (Flipkart Assured)';
+
         return {
           id: row.id,
           name: row.model_name,
@@ -152,8 +257,8 @@ export function usePhones(activeComparedIds: string[] = []): UsePhonesResult {
             storeName: 'Flipkart',
             url: row.flipkart_url || fallback?.store.url || `https://www.flipkart.com/search?q=${encodeURIComponent(row.model_name)}`,
             inStock: row.stock_status_wb !== 'out_of_stock',
-            seller: rawSpecs?.seller || fallback?.store.seller || 'OmniTechRetail (Flipkart Assured)',
-            bankOffers: rawSpecs?.bankOffers || fallback?.store.bankOffers || '₹1,500 Instant Discount with Bank Cards',
+            seller: seller,
+            bankOffers: bankOffers,
             exchangeBonus: row.current_price_inr > 20000 ? 'Up to ₹18,000 off on exchange' : 'Up to ₹12,000 off on exchange',
             assuredBadge: true,
           },
@@ -161,36 +266,42 @@ export function usePhones(activeComparedIds: string[] = []): UsePhonesResult {
             releaseDate: rawSpecs?.releaseDate || row.release_date || fallback?.specs.releaseDate || '2024',
             chipset: rawSpecs?.chipset || fallback?.specs.chipset || 'N/A',
             cpuDetails: rawSpecs?.cpuDetails || fallback?.specs.cpuDetails || 'Octa-core processor',
-            antutuScore: rawSpecs?.antutuScore || fallback?.specs.antutuScore || 'N/A',
+            antutuScore: antutuScore,
             ram: rawSpecs?.ram || fallback?.specs.ram || '8 GB',
             ramType: rawSpecs?.ramType || fallback?.specs.ramType || 'LPDDR4X',
             storage: rawSpecs?.storage || fallback?.specs.storage || '128 GB',
             storageType: rawSpecs?.storageType || fallback?.specs.storageType || 'UFS 2.2',
             expandableStorage: rawSpecs?.expandableStorage || fallback?.specs.expandableStorage || 'Yes, up to 1 TB',
-            displaySize: rawSpecs?.displaySize || fallback?.specs.displaySize || '6.7 inches',
-            displayType: rawSpecs?.displayType || fallback?.specs.displayType || 'AMOLED Display',
-            resolution: rawSpecs?.resolution || fallback?.specs.resolution || '2400 x 1080 px (FHD+)',
-            refreshRate: rawSpecs?.refreshRate || fallback?.specs.refreshRate || '120 Hz',
-            peakBrightness: rawSpecs?.peakBrightness || fallback?.specs.peakBrightness || '1000 nits',
-            rearCamera: rawSpecs?.rearCamera || fallback?.specs.rearCamera || {
-              primary: '50 MP with OIS',
-              secondary: '8 MP Ultra-Wide',
-              features: '4K video recording, Night mode',
-            },
-            frontCamera: rawSpecs?.frontCamera || fallback?.specs.frontCamera || {
-              resolution: '16 MP',
-              features: 'Portrait mode, Screen Flash',
-            },
-            batteryCapacity: rawSpecs?.batteryCapacity || fallback?.specs.batteryCapacity || '5000 mAh',
-            chargingSpeed: rawSpecs?.chargingSpeed || fallback?.specs.chargingSpeed || '45W Fast Charging',
+            displaySize: displaySize,
+            displayType: displayType,
+            resolution: resolution,
+            refreshRate: refreshRate,
+            peakBrightness: peakBrightness,
+            rearCamera: rearCamera,
+            frontCamera: frontCamera,
+            batteryCapacity: batteryCapacity,
+            chargingSpeed: chargingSpeed,
             wirelessCharging: rawSpecs?.wirelessCharging || fallback?.specs.wirelessCharging || 'No',
             os: rawSpecs?.os || fallback?.specs.os || 'Android 14',
             fiveGBands: rawSpecs?.fiveGBands || fallback?.specs.fiveGBands || 'n1/n3/n5/n8/n28A/n41/n77/n78',
             weightGrams: rawSpecs?.weightGrams || fallback?.specs.weightGrams || 190,
             thicknessMm: rawSpecs?.thicknessMm || fallback?.specs.thicknessMm || 8.0,
           },
-          pros: rawSpecs?.pros || fallback?.pros || ['High performance value', 'Vibrant AMOLED panel'],
-          cons: rawSpecs?.cons || fallback?.cons || ['Flash sale availability'],
+          pros: pros,
+          cons: cons,
+          isSpecialMention: Boolean(
+            (row as any).is_special_mention ??
+            rawSpecs?.is_special_mention ??
+            rawSpecs?.isSpecialMention ??
+            fallback?.isSpecialMention ??
+            row.current_price_inr > 30000
+          ),
+          specialMentionNote:
+            (row as any).special_mention_note ||
+            rawSpecs?.special_mention_note ||
+            rawSpecs?.specialMentionNote ||
+            fallback?.specialMentionNote ||
+            (row.current_price_inr > 30000 ? 'Flagship-tier hardware normally priced above ₹30k; worth tracking during sales.' : undefined),
         };
       });
 

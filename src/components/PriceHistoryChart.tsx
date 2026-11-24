@@ -29,25 +29,40 @@ export const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({
   const activeRefPhone = phones.find(p => p.id === selectedReferencePhoneId) || phones[0];
 
   // Calculate global min and max prices across all active phones
-  const { minPrice, maxPrice, dates } = useMemo(() => {
-    if (phones.length === 0) return { minPrice: 15000, maxPrice: 30000, dates: [] };
+  const { minPrice, maxPrice, dates, dateIndexMap } = useMemo(() => {
+    if (phones.length === 0) {
+      return {
+        minPrice: 15000,
+        maxPrice: 30000,
+        dates: [],
+        dateIndexMap: new Map<string, number>(),
+      };
+    }
 
     let min = Infinity;
     let max = -Infinity;
+    const dateSet = new Set<string>();
+
     phones.forEach((p) => {
       p.priceHistory.forEach((pt) => {
         if (pt.price < min) min = pt.price;
         if (pt.price > max) max = pt.price;
+        if (pt.date) dateSet.add(pt.date);
       });
     });
+
+    if (min === Infinity) min = 15000;
+    if (max === -Infinity) max = 30000;
 
     // Add padding to range
     const paddedMin = Math.max(10000, Math.floor((min - 1000) / 1000) * 1000);
     const paddedMax = Math.min(35000, Math.ceil((max + 1000) / 1000) * 1000);
 
-    const dateList = phones[0]?.priceHistory.map((pt) => pt.date) || [];
+    const sortedDates = Array.from(dateSet).sort();
+    const map = new Map<string, number>();
+    sortedDates.forEach((d, idx) => map.set(d, idx));
 
-    return { minPrice: paddedMin, maxPrice: paddedMax, dates: dateList };
+    return { minPrice: paddedMin, maxPrice: paddedMax, dates: sortedDates, dateIndexMap: map };
   }, [phones]);
 
   // Chart dimensions in SVG viewBox coordinate space
@@ -58,7 +73,7 @@ export const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({
   const plotHeight = chartHeight - padding.top - padding.bottom;
 
   // Scale functions
-  const totalPoints = Math.max(2, dates.length || 365);
+  const totalPoints = Math.max(2, dates.length);
   const getX = (index: number) => {
     return padding.left + (index / (totalPoints - 1)) * plotWidth;
   };
@@ -76,14 +91,19 @@ export const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({
     return phones.map((phone) => {
       const len = phone.priceHistory.length;
       if (len === 0) return '';
+      if (len === 1) {
+        const y = getY(phone.priceHistory[0].price);
+        return `M ${padding.left},${y.toFixed(1)} L ${(chartWidth - padding.right)},${y.toFixed(1)}`;
+      }
       const pts = phone.priceHistory.map((pt, idx) => {
-        const x = getX(idx);
+        const dateIdx = dateIndexMap.get(pt.date) ?? idx;
+        const x = getX(dateIdx);
         const y = getY(pt.price);
         return `${x.toFixed(1)},${y.toFixed(1)}`;
       });
       return `M ${pts.join(' L ')}`;
     });
-  }, [phones, minPrice, maxPrice, totalPoints]);
+  }, [phones, minPrice, maxPrice, totalPoints, dateIndexMap]);
 
   // Y-axis tick intervals
   const yTicks = useMemo(() => {
@@ -96,11 +116,19 @@ export const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({
     return ticks;
   }, [minPrice, maxPrice]);
 
-  // X-axis date ticks (6 intervals across the 365 days)
+  // X-axis date ticks
   const xTicks = useMemo(() => {
     if (dates.length === 0) return [];
-    const indices = [0, 60, 120, 180, 240, 300, 364];
-    return indices.map((idx) => {
+    if (dates.length <= 7) {
+      return dates.map((d, idx) => ({
+        index: idx,
+        label: new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+      }));
+    }
+    const step = (dates.length - 1) / 6;
+    const indices = [0, 1, 2, 3, 4, 5, 6].map((i) => Math.round(i * step));
+    const uniqueIndices = Array.from(new Set(indices));
+    return uniqueIndices.map((idx) => {
       const dateStr = dates[idx];
       if (!dateStr) return { index: idx, label: '' };
       const d = new Date(dateStr);
@@ -167,11 +195,17 @@ export const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({
 
   // Hover data calculations
   const hoveredDate = hoverIndex !== null ? dates[hoverIndex] : null;
-  const hoveredEvents = hoverIndex !== null
-    ? phones
-        .map((p) => p.priceHistory[hoverIndex]?.event)
-        .filter(Boolean)
-    : [];
+  const hoveredEvents =
+    hoverIndex !== null && hoveredDate
+      ? phones
+          .map((p) => {
+            const pt =
+              p.priceHistory.find((item) => item.date === hoveredDate) ||
+              (p.priceHistory.length === 1 ? p.priceHistory[0] : undefined);
+            return pt?.event;
+          })
+          .filter(Boolean)
+      : [];
   const primaryEvent = hoveredEvents[0];
 
   return (
@@ -396,9 +430,10 @@ export const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({
             </g>
           )}
 
-          {/* Device Lines */}
+          {/* Device Lines & Data Points */}
           {phones.map((phone, idx) => {
             const color = LINE_COLORS[idx % LINE_COLORS.length];
+            const isShort = phone.priceHistory.length <= 5;
             return (
               <g key={phone.id}>
                 <path
@@ -408,7 +443,25 @@ export const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({
                   strokeWidth="2.2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  strokeDasharray={phone.priceHistory.length === 1 ? '4,4' : undefined}
                 />
+                {isShort &&
+                  phone.priceHistory.map((pt, ptIdx) => {
+                    const dateIdx = dateIndexMap.get(pt.date) ?? ptIdx;
+                    const cx = phone.priceHistory.length === 1 ? chartWidth - padding.right : getX(dateIdx);
+                    const cy = getY(pt.price);
+                    return (
+                      <circle
+                        key={`${phone.id}-dot-${ptIdx}`}
+                        cx={cx}
+                        cy={cy}
+                        r="4"
+                        fill="#FFFFFF"
+                        stroke={color.stroke}
+                        strokeWidth="2"
+                      />
+                    );
+                  })}
               </g>
             );
           })}
@@ -454,7 +507,9 @@ export const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({
               {/* Intersection dots for each phone */}
               {phones.map((phone, idx) => {
                 const color = LINE_COLORS[idx % LINE_COLORS.length];
-                const pt = phone.priceHistory[hoverIndex];
+                const pt =
+                  phone.priceHistory.find((item) => item.date === hoveredDate) ||
+                  (phone.priceHistory.length === 1 ? phone.priceHistory[0] : undefined);
                 if (!pt) return null;
                 const cx = getX(hoverIndex);
                 const cy = getY(pt.price);
@@ -496,7 +551,9 @@ export const PriceHistoryChart: React.FC<PriceHistoryChartProps> = ({
             <div className="space-y-1">
               {phones.map((phone, idx) => {
                 const color = LINE_COLORS[idx % LINE_COLORS.length];
-                const pt = phone.priceHistory[hoverIndex];
+                const pt =
+                  phone.priceHistory.find((item) => item.date === hoveredDate) ||
+                  (phone.priceHistory.length === 1 ? phone.priceHistory[0] : undefined);
                 if (!pt) return null;
                 return (
                   <div key={phone.id} className="flex items-center justify-between gap-4">

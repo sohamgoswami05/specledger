@@ -1,4 +1,4 @@
-# SpecLedger (https://specledger-in.pages.dev)
+# SpecLedger (https://specledger.pages.dev)
 
 > Sub-₹30,000 Flipkart price ledger & technical spec matrix for budget-conscious Indian smartphone buyers.
 

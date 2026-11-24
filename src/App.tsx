@@ -113,10 +113,27 @@ const AppContent: React.FC = () => {
     return counts;
   }, [phones]);
 
-  // Filtered and sorted phones
-  const filteredPhones = useMemo(() => {
+  // Sort helper function
+  const sortPhones = (a: Phone, b: Phone) => {
+    if (filters.sortBy === 'price-asc') return a.currentPrice - b.currentPrice;
+    if (filters.sortBy === 'price-desc') return b.currentPrice - a.currentPrice;
+    if (filters.sortBy === 'battery-desc') {
+      return parseInt(b.specs.batteryCapacity) - parseInt(a.specs.batteryCapacity);
+    }
+    // discount-desc default
+    const discountA = (a.mrp - a.currentPrice) / a.mrp;
+    const discountB = (b.mrp - b.currentPrice) / b.mrp;
+    return discountB - discountA;
+  };
+
+  // 1. Standard phones: strictly !p.isSpecialMention && p.currentPrice <= 30000, filtered by active filters
+  const standardFilteredPhones = useMemo(() => {
     return phones
       .filter((p) => {
+        // Exclude special mentions and phones over ₹30,000 from main grid
+        if (p.isSpecialMention || p.currentPrice > 30000) {
+          return false;
+        }
         // Brand filter
         if (filters.selectedBrand !== 'All' && p.brand !== filters.selectedBrand) {
           return false;
@@ -151,17 +168,39 @@ const AppContent: React.FC = () => {
         }
         return true;
       })
-      .sort((a, b) => {
-        if (filters.sortBy === 'price-asc') return a.currentPrice - b.currentPrice;
-        if (filters.sortBy === 'price-desc') return b.currentPrice - a.currentPrice;
-        if (filters.sortBy === 'battery-desc') {
-          return parseInt(b.specs.batteryCapacity) - parseInt(a.specs.batteryCapacity);
+      .sort(sortPhones);
+  }, [phones, filters]);
+
+  // 2. Special Mentions: phones where p.isSpecialMention || p.currentPrice > 30000
+  const specialMentionPhones = useMemo(() => {
+    return phones
+      .filter((p) => {
+        // Must be special mention or priced above ₹30k
+        if (!p.isSpecialMention && p.currentPrice <= 30000) {
+          return false;
         }
-        // discount-desc default
-        const discountA = (a.mrp - a.currentPrice) / a.mrp;
-        const discountB = (b.mrp - b.currentPrice) / b.mrp;
-        return discountB - discountA;
-      });
+        // Brand filter
+        if (filters.selectedBrand !== 'All' && p.brand !== filters.selectedBrand) {
+          return false;
+        }
+        // Search query
+        if (filters.searchQuery.trim()) {
+          const q = filters.searchQuery.toLowerCase();
+          const matchesName = p.name.toLowerCase().includes(q);
+          const matchesChipset = p.specs.chipset.toLowerCase().includes(q);
+          const matchesBrand = p.brand.toLowerCase().includes(q);
+          if (!matchesName && !matchesChipset && !matchesBrand) return false;
+        }
+        // Deliverable / Back in stock if active
+        if (filters.onlyDeliverable && p.pincodeAvailability.status === 'out_of_stock') {
+          return false;
+        }
+        if (filters.onlyBackInStock && p.pincodeAvailability.status !== 'back_in_stock') {
+          return false;
+        }
+        return true;
+      })
+      .sort(sortPhones);
   }, [phones, filters]);
 
   // Handle toggling compare from catalog or autocomplete
@@ -207,7 +246,7 @@ const AppContent: React.FC = () => {
       <FilterBar
         filters={filters}
         setFilters={setFilters}
-        totalMatches={filteredPhones.length}
+        totalMatches={standardFilteredPhones.length + specialMentionPhones.length}
         brandCounts={brandCounts}
         allPhones={phones}
         comparedIds={activeComparedIds}
@@ -229,7 +268,8 @@ const AppContent: React.FC = () => {
           />
         ) : (
           <CatalogView
-            phones={filteredPhones}
+            phones={standardFilteredPhones}
+            specialMentions={specialMentionPhones}
             comparedIds={activeComparedIds}
             onToggleCompare={handleToggleCompare}
             onOpenSinglePhoneModal={setSelectedModalPhone}
