@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Seed Script for PhoneLedger / SmartPickr Supabase Database (Python)
+Seed Script for SpecLedger Supabase Database (Python)
 ------------------------------------------------------------------
 Upserts:
 1. 21 phones under ₹30,000 across Vivo, OnePlus, Realme, and Samsung with complete structured specs

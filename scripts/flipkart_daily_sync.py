@@ -217,7 +217,7 @@ def main():
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
     print("=" * 70)
-    print(f"🛒 SMARTPICKR FLIPKART DAILY SYNC · {today_str}")
+    print(f"🛒 SPECLEDGER FLIPKART DAILY SYNC · {today_str}")
     print(f"📍 Target Pincode: {TARGET_PINCODE} (Prefix: {PINCODE_PREFIX} - West Bengal / East)")
     print("=" * 70)
 
@@ -316,7 +316,7 @@ def main():
 
                 print(f"   🚨 RESTOCK DETECTED! {name} is back in stock for PIN {TARGET_PINCODE}!")
                 send_telegram_alert(
-                    f"🔥 <b>RESTOCK ALERT — SmartPickr</b>\n\n"
+                    f"🔥 <b>RESTOCK ALERT — SpecLedger</b>\n\n"
                     f"📱 <b>{name}</b> is back in stock for PIN <b>{TARGET_PINCODE}</b> (West Bengal)!\n"
                     f"💰 Current Price: <b>₹{price_to_record:,}</b>\n"
                     f"🚚 {delivery_text}\n\n"
@@ -335,7 +335,7 @@ def main():
                 price_drop_alerts += 1
                 print(f"   📉 PRICE DROP! ₹{old_price:,} ➔ ₹{price_to_record:,} (Down ₹{price_diff:,} / -{pct_drop:.1f}%)")
                 send_telegram_alert(
-                    f"📉 <b>PRICE DROP ALERT — SmartPickr</b>\n\n"
+                    f"📉 <b>PRICE DROP ALERT — SpecLedger</b>\n\n"
                     f"📱 <b>{name}</b> dropped in price!\n"
                     f"💰 Old Price: <s>₹{old_price:,}</s>\n"
                     f"🔥 New Price: <b>₹{price_to_record:,}</b> (-₹{price_diff:,} / -{pct_drop:.1f}%)\n"

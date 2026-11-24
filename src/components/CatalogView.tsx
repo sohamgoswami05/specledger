@@ -99,10 +99,10 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
           return (
             <div
               key={phone.id}
-              className={`bg-app-surface border rounded-lg p-4 flex flex-col justify-between transition-all duration-150 hover:shadow-sm ${
+              className={`bg-app-surface border rounded-lg p-4 flex flex-col justify-between transition-all duration-150 hover:shadow-xs ${
                 isComparing
                   ? 'border-app-accent ring-1 ring-app-accent'
-                  : 'border-app-border hover:border-app-border-subtle'
+                  : 'border-app-border hover:border-app-accent/60'
               }`}
             >
               <div>
@@ -144,7 +144,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                       <span className="tabular-nums text-xs text-app-muted line-through">
                         {formatINR(phone.mrp)}
                       </span>
-                      <span className="text-[10px] font-bold text-emerald-700">
+                      <span className="text-[10px] font-bold text-emerald-700 tabular-nums">
                         {Math.round(((phone.mrp - phone.currentPrice) / phone.mrp) * 100)}% off
                       </span>
                     </div>

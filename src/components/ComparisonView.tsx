@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { Phone } from '../types/phone';
 import { formatINR } from '../utils/formatters';
 import { usePincode } from '../context/PincodeContext';
@@ -87,6 +87,43 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
     return activePhones.some((p) => extractor(p) !== first);
   };
 
+  // Best-in-row calculations among active compared phones
+  const maxAntutu = useMemo(() => {
+    let max = 0;
+    activePhones.forEach((p) => {
+      const v = parseInt((p.specs.antutuScore || '0').replace(/\D/g, ''));
+      if (v > max) max = v;
+    });
+    return max > 0 ? max : null;
+  }, [activePhones]);
+
+  const maxBattery = useMemo(() => {
+    let max = 0;
+    activePhones.forEach((p) => {
+      const v = parseInt((p.specs.batteryCapacity || '0').replace(/\D/g, ''));
+      if (v > max) max = v;
+    });
+    return max > 0 ? max : null;
+  }, [activePhones]);
+
+  const maxCharging = useMemo(() => {
+    let max = 0;
+    activePhones.forEach((p) => {
+      const v = parseInt((p.specs.chargingSpeed || '0').replace(/\D/g, ''));
+      if (v > max) max = v;
+    });
+    return max > 0 ? max : null;
+  }, [activePhones]);
+
+  const lowestPrice = useMemo(() => {
+    if (activePhones.length <= 1) return null;
+    let min = Infinity;
+    activePhones.forEach((p) => {
+      if (p.currentPrice < min) min = p.currentPrice;
+    });
+    return min < Infinity ? min : null;
+  }, [activePhones]);
+
   return (
     <div className="space-y-6">
       {/* 3-Slot Phone Selector Bar */}
@@ -165,6 +202,11 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                         ) : (
                           <span className="text-[9.5px] text-app-muted tabular-nums">
                             {phone.percentBelowAvg}% below avg
+                          </span>
+                        )}
+                        {phone.currentPrice === lowestPrice && activePhones.length > 1 && (
+                          <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-teal-50 text-[#0F766E] border border-teal-200">
+                            Lowest in Comparison
                           </span>
                         )}
                       </div>
@@ -432,6 +474,11 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                           {phone.percentBelowAvg}% below avg
                         </span>
                       )}
+                      {phone.currentPrice === lowestPrice && activePhones.length > 1 && (
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-teal-50 text-[#0F766E] border border-teal-200">
+                          Lowest Price
+                        </span>
+                      )}
                     </div>
 
                     {/* Stock Status Pill for Current Pincode */}
@@ -514,7 +561,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
             className={`grid grid-cols-12 divide-x divide-app-border transition-colors ${
               highlightDifferences && areValuesDifferent((p) => p.specs.chipset)
                 ? 'bg-teal-50/40'
-                : 'hover:bg-app-bg/30'
+                : 'hover:bg-[#F9F9F7]'
             }`}
           >
             <div className="col-span-3 p-3 font-medium text-app-muted">Chipset</div>
@@ -533,7 +580,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
             className={`grid grid-cols-12 divide-x divide-app-border transition-colors ${
               highlightDifferences && areValuesDifferent((p) => p.specs.antutuScore)
                 ? 'bg-teal-50/40'
-                : 'hover:bg-app-bg/30'
+                : 'hover:bg-[#F9F9F7]'
             }`}
           >
             <div className="col-span-3 p-3 font-medium text-app-muted">
@@ -543,12 +590,19 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
               const p = slotPhones[idx];
               if (!p) return <div key={`spec-antutu-${idx}`} className="col-span-3 p-3 text-app-muted">—</div>;
 
-              const scoreVal = parseInt((p.specs.antutuScore || '0').replace(/,/g, ''));
+              const scoreVal = parseInt((p.specs.antutuScore || '0').replace(/\D/g, ''));
               return (
                 <div key={`spec-antutu-${idx}`} className="col-span-3 p-3">
-                  <span className="tabular-nums font-bold text-app-text text-xs">
-                    {p.specs.antutuScore || 'N/A'}
-                  </span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="tabular-nums font-bold text-app-text text-xs">
+                      {p.specs.antutuScore || 'N/A'}
+                    </span>
+                    {scoreVal === maxAntutu && activePhones.length > 1 && (
+                      <span className="px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-teal-50 text-[#0F766E] border border-teal-200">
+                        Top Benchmark
+                      </span>
+                    )}
+                  </div>
                   {scoreVal > 0 && (
                     <div className="w-full bg-app-border h-1.5 rounded-full mt-1.5 overflow-hidden">
                       <div
@@ -569,7 +623,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
             className={`grid grid-cols-12 divide-x divide-app-border transition-colors ${
               highlightDifferences && areValuesDifferent((p) => p.specs.ram)
                 ? 'bg-teal-50/40'
-                : 'hover:bg-app-bg/30'
+                : 'hover:bg-[#F9F9F7]'
             }`}
           >
             <div className="col-span-3 p-3 font-medium text-app-muted">RAM & Type</div>
@@ -601,7 +655,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
             className={`grid grid-cols-12 divide-x divide-app-border transition-colors ${
               highlightDifferences && areValuesDifferent((p) => p.specs.displayType)
                 ? 'bg-teal-50/40'
-                : 'hover:bg-app-bg/30'
+                : 'hover:bg-[#F9F9F7]'
             }`}
           >
             <div className="col-span-3 p-3 font-medium text-app-muted">Screen Type & Size</div>
@@ -627,7 +681,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
             className={`grid grid-cols-12 divide-x divide-app-border transition-colors ${
               highlightDifferences && areValuesDifferent((p) => p.specs.refreshRate)
                 ? 'bg-teal-50/40'
-                : 'hover:bg-app-bg/30'
+                : 'hover:bg-[#F9F9F7]'
             }`}
           >
             <div className="col-span-3 p-3 font-medium text-app-muted">Refresh Rate & Brightness</div>
@@ -669,7 +723,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
             className={`grid grid-cols-12 divide-x divide-app-border transition-colors ${
               highlightDifferences && areValuesDifferent((p) => p.specs.batteryCapacity)
                 ? 'bg-teal-50/40'
-                : 'hover:bg-app-bg/30'
+                : 'hover:bg-[#F9F9F7]'
             }`}
           >
             <div className="col-span-3 p-3 font-medium text-app-muted">Battery Capacity</div>
@@ -680,14 +734,21 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
               const capacity = parseInt(p.specs.batteryCapacity || '0');
               return (
                 <div key={`spec-bat-${idx}`} className="col-span-3 p-3 text-app-text">
-                  <span className="tabular-nums font-bold text-sm text-app-text">
-                    {p.specs.batteryCapacity}
-                  </span>
-                  {capacity >= 7000 && (
-                    <span className="ml-2 text-[10px] px-1.5 py-0.2 bg-teal-100 text-[#0F766E] rounded font-semibold">
-                      Multi-day Endurance
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="tabular-nums font-bold text-sm text-app-text">
+                      {p.specs.batteryCapacity}
                     </span>
-                  )}
+                    {capacity === maxBattery && activePhones.length > 1 && (
+                      <span className="px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-teal-50 text-[#0F766E] border border-teal-200">
+                        Largest Battery
+                      </span>
+                    )}
+                    {capacity >= 7000 && capacity !== maxBattery && (
+                      <span className="text-[10px] px-1.5 py-0.2 bg-teal-100 text-[#0F766E] rounded font-semibold">
+                        Multi-day Endurance
+                      </span>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -698,22 +759,25 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
             className={`grid grid-cols-12 divide-x divide-app-border transition-colors ${
               highlightDifferences && areValuesDifferent((p) => p.specs.chargingSpeed)
                 ? 'bg-teal-50/40'
-                : 'hover:bg-app-bg/30'
+                : 'hover:bg-[#F9F9F7]'
             }`}
           >
             <div className="col-span-3 p-3 font-medium text-app-muted">Charging Speed</div>
             {[0, 1, 2].map((idx) => {
               const p = slotPhones[idx];
+              if (!p) return <div key={`spec-charge-${idx}`} className="col-span-3 p-3 text-app-muted">—</div>;
+              const chargeVal = parseInt(p.specs.chargingSpeed || '0');
               return (
                 <div key={`spec-charge-${idx}`} className="col-span-3 p-3 text-app-text">
-                  {p ? (
-                    <>
-                      <span className="font-semibold block">{p.specs.chargingSpeed}</span>
-                      <span className="text-[10px] text-app-muted">{p.specs.wirelessCharging}</span>
-                    </>
-                  ) : (
-                    <span className="text-app-muted">—</span>
-                  )}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-semibold block tabular-nums">{p.specs.chargingSpeed}</span>
+                    {chargeVal === maxCharging && activePhones.length > 1 && (
+                      <span className="px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-teal-50 text-[#0F766E] border border-teal-200">
+                        Fastest Charge
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-app-muted block mt-0.5">{p.specs.wirelessCharging}</span>
                 </div>
               );
             })}
@@ -730,7 +794,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
             className={`grid grid-cols-12 divide-x divide-app-border transition-colors ${
               highlightDifferences && areValuesDifferent((p) => p.specs.rearCamera?.primary)
                 ? 'bg-teal-50/40'
-                : 'hover:bg-app-bg/30'
+                : 'hover:bg-[#F9F9F7]'
             }`}
           >
             <div className="col-span-3 p-3 font-medium text-app-muted">Rear Primary Sensor</div>
@@ -760,7 +824,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
             className={`grid grid-cols-12 divide-x divide-app-border transition-colors ${
               highlightDifferences && areValuesDifferent((p) => p.specs.frontCamera?.resolution)
                 ? 'bg-teal-50/40'
-                : 'hover:bg-app-bg/30'
+                : 'hover:bg-[#F9F9F7]'
             }`}
           >
             <div className="col-span-3 p-3 font-medium text-app-muted">Front Selfie Camera</div>
@@ -792,7 +856,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
             className={`grid grid-cols-12 divide-x divide-app-border transition-colors ${
               highlightDifferences && areValuesDifferent((p) => p.specs.storage)
                 ? 'bg-teal-50/40'
-                : 'hover:bg-app-bg/30'
+                : 'hover:bg-[#F9F9F7]'
             }`}
           >
             <div className="col-span-3 p-3 font-medium text-app-muted">Storage & UFS Type</div>
@@ -819,7 +883,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
             className={`grid grid-cols-12 divide-x divide-app-border transition-colors ${
               highlightDifferences && areValuesDifferent((p) => p.specs.os)
                 ? 'bg-teal-50/40'
-                : 'hover:bg-app-bg/30'
+                : 'hover:bg-[#F9F9F7]'
             }`}
           >
             <div className="col-span-3 p-3 font-medium text-app-muted">Operating System & Updates</div>
@@ -834,7 +898,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
           </div>
 
           {/* Release Date */}
-          <div className="grid grid-cols-12 divide-x divide-app-border hover:bg-app-bg/30">
+          <div className="grid grid-cols-12 divide-x divide-app-border hover:bg-[#F9F9F7] transition-colors">
             <div className="col-span-3 p-3 font-medium text-app-muted flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-app-accent" />
               <span>Release Date</span>

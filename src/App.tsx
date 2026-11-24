@@ -27,7 +27,7 @@ const AppContent: React.FC = () => {
     () => comparedSlots.filter(Boolean) as string[],
     [comparedSlots]
   );
-  const { phones, isLiveSupabase, loadHistoryForIds } = usePhones(activeComparedIds);
+  const { phones, loadHistoryForIds } = usePhones(activeComparedIds);
 
   const [activeTab, setActiveTab] = useState<'compare' | 'browse'>('compare');
   const [selectedModalPhone, setSelectedModalPhone] = useState<Phone | null>(null);
@@ -201,7 +201,6 @@ const AppContent: React.FC = () => {
         setActiveTab={setActiveTab}
         comparedCount={activeSlotCount}
         totalCatalogCount={phones.length}
-        isLiveSupabase={isLiveSupabase}
       />
 
       {/* Global Quick Filter Strip with Live Autocomplete */}
