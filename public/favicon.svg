@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Rounded Brand Accent Container -->
+  <rect width="32" height="32" rx="7" fill="#0F766E"/>
+  
+  <!-- Geometric Smartphone Silhouette -->
+  <rect x="5.5" y="4.5" width="13" height="23" rx="2.5" stroke="#FFFFFF" stroke-width="1.6" fill="none"/>
+  <!-- Speaker / Camera notch -->
+  <circle cx="12" cy="7" r="0.75" fill="#FFFFFF"/>
+  <line x1="10" y1="24.5" x2="14" y2="24.5" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" stroke-opacity="0.6"/>
+  
+  <!-- Stepped Ledger / Price Drop Curve (Floor Step-Curve) -->
+  <path d="M 8.5 12.5 H 12.5 V 16.5 H 18 V 21 H 26.5" stroke="#5EEAD4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Target Price Floor Dot -->
+  <circle cx="26.5" cy="21" r="1.75" fill="#FFFFFF"/>
+  
+  <!-- Subtle Ledger Hash Lines (Analytical Matrix) -->
+  <line x1="21" y1="8" x2="26.5" y2="8" stroke="#99F6E4" stroke-width="1.4" stroke-linecap="round" stroke-opacity="0.8"/>
+  <line x1="21" y1="12" x2="25" y2="12" stroke="#99F6E4" stroke-width="1.4" stroke-linecap="round" stroke-opacity="0.8"/>
+</svg>

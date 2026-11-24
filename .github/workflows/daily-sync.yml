@@ -1,0 +1,47 @@
+name: Flipkart Daily Price & Restock Sync
+
+on:
+  schedule:
+    # Runs at 03:00 UTC every day (08:30 AM IST - India Standard Time)
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      pincode:
+        description: 'Target delivery pincode to test (default: 700034)'
+        required: false
+        default: '700034'
+
+jobs:
+  scrape-and-sync:
+    name: Scrape Flipkart & Sync Supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r scripts/requirements.txt
+
+      - name: Install Playwright Chromium
+        run: |
+          playwright install --with-deps chromium
+
+      - name: Run Flipkart Sync Script
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TARGET_PINCODE: ${{ github.event.inputs.pincode || vars.TARGET_PINCODE || '700034' }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python scripts/flipkart_daily_sync.py
