@@ -98,9 +98,9 @@ const AppContent: React.FC = () => {
 
       // 2. If slots are empty on initial load, pre-populate with 3 distinct target phones
       const defaultCandidates = [
-        phones.find((p) => p.id.includes('nord-ce4'))?.id,
-        phones.find((p) => p.id.includes('a36'))?.id,
-        phones.find((p) => p.id.includes('p4-power'))?.id,
+        phones.find((p) => p.id === 'oneplus-nord-ce5-8-128')?.id,
+        phones.find((p) => p.id === 'vivo-t4-pro-8-128')?.id,
+        phones.find((p) => p.id === 'realme-p4-pro-8-128')?.id,
         phones[0]?.id,
         phones[1]?.id,
         phones[2]?.id,

@@ -3,13 +3,13 @@
 Seed Script for SpecLedger Supabase Database (Python Wrapper)
 ------------------------------------------------------------------
 Upserts:
-1. All 28 phones under ₹30,000 / special mentions across Vivo, OnePlus, Realme, and Samsung
-   with complete structured specs.
+1. All 30 finalized SpecLedger models (18 core under ₹30k, 10 ₹30k–₹35k stretch picks,
+   2 under-₹20k budget spotlights) with complete structured specs & special_mention_tier.
 2. Queries existing Supabase 'phones' table first to preserve all active direct /p/ URLs
    and never overwrites them with search placeholders.
 3. Sanitizes URL typos (seaarch, searcch, flipkarrt.com, flipkart.coom).
 4. Seeds West Bengal (7xxxxx / 700034) delivery availability into pincode_availability.
-5. Batch upserts 365 days of realistic Indian retail step-curve prices into price_history.
+5. Seeds a single current baseline price point per phone (no synthetic 365-day festival dips).
 """
 
 import os

@@ -47,7 +47,9 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
     const range = maxP - minP || 1;
     const sampledHistory =
       phone.priceHistory && phone.priceHistory.length > 0
-        ? phone.priceHistory.filter((_, idx) => idx % 7 === 0)
+        ? phone.priceHistory.length <= 14
+          ? phone.priceHistory
+          : phone.priceHistory.filter((_, idx) => idx % 7 === 0)
         : [];
     const sparklinePoints =
       sampledHistory.length > 1
@@ -60,7 +62,16 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
             .join(' ')
         : `0,16 60,16 120,16`;
 
-    const isNowUnder30k = isSpecialMention && phone.currentPrice <= 30000;
+    const tier =
+      phone.specialMentionTier ||
+      (isSpecialMention && phone.currentPrice < 20000
+        ? 'budget_under_20k'
+        : isSpecialMention
+        ? 'stretch_30k_35k'
+        : undefined);
+    const isBudgetPick = tier === 'budget_under_20k';
+    const isStretchPick = tier === 'stretch_30k_35k';
+    const isStretchUnder30k = isStretchPick && phone.currentPrice <= 30000;
 
     return (
       <div
@@ -68,6 +79,8 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
         className={`bg-app-surface border rounded-lg p-4 flex flex-col justify-between transition-all duration-150 hover:shadow-xs ${
           isComparing
             ? 'border-app-accent ring-1 ring-app-accent'
+            : isBudgetPick
+            ? 'border-teal-200/90 hover:border-app-accent bg-teal-50/10'
             : isSpecialMention
             ? 'border-amber-200/90 hover:border-amber-400 bg-amber-50/10'
             : 'border-app-border hover:border-app-accent/60'
@@ -80,14 +93,18 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
               {phone.brand}
             </span>
 
-            {isNowUnder30k ? (
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+            {isBudgetPick ? (
+              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-teal-50 text-[#0F766E] border border-teal-200">
+                Budget Pick · Under ₹20k
+              </span>
+            ) : isStretchUnder30k ? (
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-100 text-[#0F766E] border border-teal-300 flex items-center gap-1 shadow-2xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0F766E] animate-pulse" />
                 <span>Now Under ₹30k</span>
               </span>
-            ) : isSpecialMention && phone.currentPrice > 30000 ? (
+            ) : isStretchPick ? (
               <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-900 border border-amber-200">
-                Above ₹30k Benchmark
+                ₹30k–₹35k Stretch Pick
               </span>
             ) : phone.isAtYearLow ? (
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-100 text-[#0F766E] flex items-center gap-1">
@@ -327,36 +344,77 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
         )}
       </section>
 
-      {/* SECTION: Special Mentions · Worth Watching Above ₹30k */}
-      {specialMentions.length > 0 && (
-        <section className="pt-6 border-t border-app-border space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-app-border-subtle">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-md bg-amber-100 text-amber-900 flex items-center justify-center font-bold text-sm shadow-2xs">
-                ★
-              </div>
-              <div>
-                <h3 className="font-heading font-bold text-sm text-app-text tracking-tight flex items-center gap-2">
-                  <span>Special Mentions · Worth Watching Above ₹30k</span>
-                  <span className="text-[10px] font-semibold text-amber-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300 tabular-nums">
-                    {specialMentions.length} Curated
-                  </span>
-                </h3>
-                <p className="text-[11px] text-app-muted">
-                  Flagship-tier 4nm chipsets, IP-rated metal builds, and wireless charging models to monitor for sale price drops.
-                </p>
-              </div>
-            </div>
-            <span className="text-[10px] text-app-muted font-medium sm:text-right">
-              Selectable in 3-Slot Comparison Matrix
-            </span>
-          </div>
+      {/* SECTION: Special Mentions (Stretch Picks & Budget Spotlights) */}
+      {specialMentions.length > 0 && (() => {
+        const stretchMentions = specialMentions.filter(
+          (p) =>
+            p.specialMentionTier === 'stretch_30k_35k' ||
+            (!p.specialMentionTier && p.currentPrice >= 20000)
+        );
+        const budgetMentions = specialMentions.filter(
+          (p) =>
+            p.specialMentionTier === 'budget_under_20k' ||
+            (!p.specialMentionTier && p.currentPrice < 20000)
+        );
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {specialMentions.map((phone) => renderPhoneCard(phone, true))}
-          </div>
-        </section>
-      )}
+        return (
+          <section className="pt-6 border-t border-app-border space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-app-border-subtle">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-md bg-amber-100 text-amber-900 flex items-center justify-center font-bold text-sm shadow-2xs">
+                  ★
+                </div>
+                <div>
+                  <h3 className="font-heading font-bold text-sm text-app-text tracking-tight flex items-center gap-2">
+                    <span>Special Mentions · Stretch &amp; Budget Spotlights</span>
+                    <span className="text-[10px] font-semibold text-amber-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300 tabular-nums">
+                      {specialMentions.length} Curated
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-app-muted">
+                    Flagship stretch picks (₹30k–₹35k) to watch for sale drops, plus standout budget spotlights under ₹20k.
+                  </p>
+                </div>
+              </div>
+              <span className="text-[10px] text-app-muted font-medium sm:text-right">
+                Selectable in 3-Slot Comparison Matrix
+              </span>
+            </div>
+
+            {stretchMentions.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-xs font-semibold text-app-text">
+                  <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200 text-[10px] uppercase tracking-wider">
+                    ₹30k–₹35k Stretch Picks
+                  </span>
+                  <span className="text-app-muted text-[11px] font-normal tabular-nums">
+                    {stretchMentions.length} models
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {stretchMentions.map((phone) => renderPhoneCard(phone, true))}
+                </div>
+              </div>
+            )}
+
+            {budgetMentions.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-xs font-semibold text-app-text">
+                  <span className="px-2 py-0.5 rounded bg-teal-50 text-[#0F766E] border border-teal-200 text-[10px] uppercase tracking-wider">
+                    Budget Spotlights · Under ₹20k
+                  </span>
+                  <span className="text-app-muted text-[11px] font-normal tabular-nums">
+                    {budgetMentions.length} models
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {budgetMentions.map((phone) => renderPhoneCard(phone, true))}
+                </div>
+              </div>
+            )}
+          </section>
+        );
+      })()}
     </div>
   );
 };

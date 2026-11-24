@@ -304,6 +304,12 @@ export function usePhones(activeComparedIds: string[] = []): UsePhonesResult {
             rawSpecs?.specialMentionNote ||
             fallback?.specialMentionNote ||
             (row.current_price_inr > 30000 ? 'Flagship-tier hardware normally priced above ₹30k; worth tracking during sales.' : undefined),
+          specialMentionTier:
+            (row as any).special_mention_tier ||
+            rawSpecs?.special_mention_tier ||
+            rawSpecs?.specialMentionTier ||
+            fallback?.specialMentionTier ||
+            (row.current_price_inr > 30000 ? 'stretch_30k_35k' : undefined),
         };
       });
 

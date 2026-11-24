@@ -581,7 +581,8 @@ def main():
                     "store": "flipkart",
                     "price_inr": price_to_record,
                     "in_stock": final_status != 'out_of_stock',
-                    "recorded_at": today_str
+                    "recorded_at": today_str,
+                    "source": "live_scrape"
                 }, on_conflict="phone_id,store,recorded_at").execute()
             except Exception as e:
                 print(f"   ❌ Error updating price_history: {e}")

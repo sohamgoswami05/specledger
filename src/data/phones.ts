@@ -1,28 +1,15 @@
 import type { Phone } from '../types/phone';
-import { RAW_CATALOG, generateRealisticStepCurve } from './catalogData';
+import { RAW_CATALOG, generateBaselineSnapshot } from './catalogData';
 
 export const phones: Phone[] = RAW_CATALOG.map((raw) => {
-  const history = generateRealisticStepCurve(
-    raw.id,
-    raw.current_price_inr,
-    raw.launch_price_inr,
-    raw.lowest_ever,
-    raw.highest_ever,
-    raw.is_newer_model
-  );
+  const history = generateBaselineSnapshot(raw.id, raw.current_price_inr);
 
-  let minP = Infinity;
-  let maxP = -Infinity;
-  let sumP = 0;
-  history.forEach((pt) => {
-    if (pt.price_inr < minP) minP = pt.price_inr;
-    if (pt.price_inr > maxP) maxP = pt.price_inr;
-    sumP += pt.price_inr;
-  });
-  const avgP = Math.round(sumP / history.length);
+  const minP = Math.min(raw.current_price_inr, raw.launch_price_inr);
+  const maxP = Math.max(raw.current_price_inr, raw.launch_price_inr);
+  const avgP = Math.round((minP + maxP) / 2);
 
   const isAtYearLow = raw.current_price_inr <= minP;
-  const percentDiff = ((avgP - raw.current_price_inr) / avgP) * 100;
+  const percentDiff = avgP > 0 ? ((avgP - raw.current_price_inr) / avgP) * 100 : 0;
   const percentBelowAvg = Math.max(0, Math.round(percentDiff * 10) / 10);
 
   return {
@@ -92,11 +79,12 @@ export const phones: Phone[] = RAW_CATALOG.map((raw) => {
     cons: raw.specs.cons,
     isSpecialMention: Boolean(raw.is_special_mention || raw.current_price_inr > 30000),
     specialMentionNote: raw.special_mention_note || (raw.current_price_inr > 30000 ? 'Normally above ₹30,000; high recommendation if seasonal sales drop it below ₹30k.' : undefined),
+    specialMentionTier: raw.special_mention_tier,
   };
 });
 
 export const DEFAULT_COMPARE_IDS = [
-  'oneplus-nord-ce4-8-128',
-  'samsung-galaxy-a36-8-256',
-  'realme-p4-power-8-128',
+  'oneplus-nord-ce5-8-128',
+  'vivo-t4-pro-8-128',
+  'realme-p4-pro-8-128',
 ];

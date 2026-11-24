@@ -60,6 +60,8 @@ export interface StoreListing {
   assuredBadge: boolean;
 }
 
+export type SpecialMentionTier = 'stretch_30k_35k' | 'budget_under_20k';
+
 export interface Phone {
   id: string;
   name: string;
@@ -83,4 +85,5 @@ export interface Phone {
   cons: string[];
   isSpecialMention?: boolean;
   specialMentionNote?: string;
+  specialMentionTier?: SpecialMentionTier;
 }
