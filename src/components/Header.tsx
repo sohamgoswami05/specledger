@@ -16,7 +16,6 @@ interface HeaderProps {
   setActiveTab: (tab: 'compare' | 'browse') => void;
   comparedCount: number;
   totalCatalogCount: number;
-  isLiveSupabase?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -24,7 +23,6 @@ export const Header: React.FC<HeaderProps> = ({
   setActiveTab,
   comparedCount,
   totalCatalogCount,
-  isLiveSupabase = false,
 }) => {
   const {
     pincode,
