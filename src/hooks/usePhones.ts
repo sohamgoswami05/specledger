@@ -33,7 +33,7 @@ export function usePhones(activeComparedIds: string[] = []): UsePhonesResult {
       // Query specifically for these IDs with a safe range limit (e.g. 3 * 365 = 1095)
       const { data: rows, error: histError } = await supabase
         .from('price_history')
-        .select('phone_id, price_inr, in_stock, recorded_at')
+        .select('phone_id, price_inr, in_stock, recorded_at, source, event_note')
         .in('phone_id', toFetch)
         .order('recorded_at', { ascending: true })
         .range(0, 1999);
@@ -61,7 +61,8 @@ export function usePhones(activeComparedIds: string[] = []): UsePhonesResult {
           historyByPhone[r.phone_id].push({
             date: r.recorded_at,
             price: r.price_inr,
-            event: getSaleEvent(r.recorded_at),
+            event: r.event_note || getSaleEvent(r.recorded_at),
+            source: r.source === 'historical_anchor' ? 'historical_anchor' : 'live_scrape',
           });
         });
 

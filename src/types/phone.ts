@@ -13,7 +13,8 @@ export interface PincodeAvailability {
 export interface PricePoint {
   date: string; // 'YYYY-MM-DD'
   price: number; // INR
-  event?: string; // 'Big Billion Days', 'Republic Day Sale', 'Summer Festive', etc.
+  event?: string; // 'Big Billion Days', 'Republic Day Sale', 'Pre-Dec 1 Baseline', etc.
+  source?: 'historical_anchor' | 'live_scrape';
 }
 
 export interface PhoneSpecs {
