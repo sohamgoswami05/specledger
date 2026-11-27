@@ -55,7 +55,10 @@ def validate_and_load_csv(csv_path: Path, valid_phone_ids: set[str]) -> list[dic
     rows_to_upsert: list[dict] = []
     errors: list[str] = []
 
-    with open(csv_path, "r", encoding="utf-8", newline="") as f:
+    raw_head = csv_path.read_bytes()[:2]
+    encoding = "utf-16" if raw_head in (b"\xff\xfe", b"\xfe\xff") else "utf-8-sig"
+
+    with open(csv_path, "r", encoding=encoding, newline="") as f:
         reader = csv.DictReader(f)
         required_cols = {"phone_id", "recorded_at", "price_inr", "event_note"}
         if not reader.fieldnames or not required_cols.issubset(set(reader.fieldnames)):
@@ -63,6 +66,8 @@ def validate_and_load_csv(csv_path: Path, valid_phone_ids: set[str]) -> list[dic
                 f"❌ Error: CSV must contain headers {sorted(required_cols)}. "
                 f"Found: {reader.fieldnames}"
             )
+            if reader.fieldnames and any("\t" in col for col in reader.fieldnames):
+                print("   💡 Tip: Detected tab-separated headers (e.g. Excel 'Unicode Text'). Re-save as 'CSV UTF-8 (Comma delimited) (.csv)'.")
             sys.exit(1)
 
         for line_num, raw in enumerate(reader, start=2):
