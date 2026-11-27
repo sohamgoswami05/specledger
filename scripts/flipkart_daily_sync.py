@@ -172,6 +172,7 @@ def scrape_flipkart_product(page, url: str, pincode: str) -> dict:
         "success": False,
         "source": None
     }
+    schema_in_stock = False
 
     response = None
     try:
@@ -229,8 +230,10 @@ def scrape_flipkart_product(page, url: str, pincode: str) -> dict:
                                         avail = off.get("availability", "")
                                         if "InStock" in avail:
                                             result["status"] = "in_stock"
+                                            schema_in_stock = True
                                         elif "OutOfStock" in avail or "SoldOut" in avail:
                                             result["status"] = "out_of_stock"
+                                            schema_in_stock = False
                                         break
                                 if result["price"]:
                                     break
@@ -325,12 +328,12 @@ def scrape_flipkart_product(page, url: str, pincode: str) -> dict:
             if IS_DEBUG_MODE:
                 print(f"   🔍 [DEBUG] Pincode entry note: {pin_err}")
 
-        # 2. Extract delivery estimate text right after pincode check
+        # 2. Extract delivery estimate text right after pincode check (collapsing multi-line dates)
         delivery_locators = [
             "div._3XINqE",
             "span._1TPvTK",
-            "div:has-text('Delivery by')",
             "div.hVvnXm",
+            "div:has-text('Delivery by')",
             "div:has-text('Delivery in')",
             "div:has-text('Delivered by')",
             "div:has-text('Not deliverable')",
@@ -343,11 +346,29 @@ def scrape_flipkart_product(page, url: str, pincode: str) -> dict:
                 count = loc.count()
                 for k in range(min(4, count)):
                     raw_text = loc.nth(k).inner_text().strip()
-                    for line in raw_text.split('\n'):
-                        cleaned = line.strip()
-                        if is_valid_delivery_text(cleaned):
-                            found_delivery = cleaned[:80]
+                    lines = [l.strip() for l in raw_text.split('\n') if l.strip()]
+                    if not lines:
+                        continue
+
+                    if len(lines) <= 3:
+                        collapsed = " ".join(lines)
+                        if is_valid_delivery_text(collapsed):
+                            found_delivery = collapsed[:80]
                             break
+
+                    for i, line in enumerate(lines):
+                        if is_valid_delivery_text(line):
+                            combined = line
+                            if i + 1 < len(lines):
+                                next_line = lines[i + 1]
+                                if len(next_line) <= 35 and not any(
+                                    b in next_line.lower()
+                                    for b in ["login", "cart", "flipkart", "question", "detail", "policy", "check", "change"]
+                                ):
+                                    combined = f"{line} {next_line}"
+                            if is_valid_delivery_text(combined):
+                                found_delivery = combined[:80]
+                                break
                     if found_delivery:
                         break
             except Exception:
@@ -357,7 +378,7 @@ def scrape_flipkart_product(page, url: str, pincode: str) -> dict:
 
         result["delivery_text"] = found_delivery
 
-        # 3. Evaluate explicit out-of-stock indicators, buttons, and delivery text
+        # 3. Evaluate explicit out-of-stock indicators, action buttons, schema.org & delivery text
         out_of_stock_indicators = [
             "text='Currently Out of Stock'",
             "text='Currently out of stock in this area'",
@@ -368,16 +389,26 @@ def scrape_flipkart_product(page, url: str, pincode: str) -> dict:
         ]
         is_sold_out = any(page.locator(ind).count() > 0 for ind in out_of_stock_indicators)
 
-        buy_now_btn = page.locator("button:has-text('Buy Now'), button:has-text('Add to Cart'), button._2KpZ6l._2U9uOA")
+        buy_now_btn = page.locator(
+            "button:has-text('BUY NOW'), button:has-text('ADD TO CART'), button:has-text('GO TO CART'), "
+            "a:has-text('BUY NOW'), a:has-text('ADD TO CART'), a:has-text('GO TO CART'), "
+            "[role='button']:has-text('BUY NOW'), [role='button']:has-text('ADD TO CART'), [role='button']:has-text('GO TO CART'), "
+            "button._2KpZ6l._2U9uOA"
+        )
         has_buy_button = buy_now_btn.count() > 0 and buy_now_btn.first.is_visible()
 
         delivery_lower = (found_delivery or "").lower()
         is_delivery_unavailable = ("not deliverable" in delivery_lower) or ("out of stock" in delivery_lower)
+        has_valid_delivery_estimate = any(
+            kw in delivery_lower for kw in ("delivery by", "delivered by", "delivery in", "tomorrow")
+        )
 
-        if is_sold_out or not has_buy_button or is_delivery_unavailable:
+        if is_sold_out or is_delivery_unavailable:
             result["status"] = "out_of_stock"
-        else:
+        elif has_buy_button or schema_in_stock or has_valid_delivery_estimate:
             result["status"] = "in_stock"
+        else:
+            result["status"] = "out_of_stock"
 
         # Check if parsing succeeded
         if result["price"] and result["price"] > 1000:
