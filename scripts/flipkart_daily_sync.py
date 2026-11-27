@@ -64,12 +64,11 @@ except ImportError:
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-# Realistic Desktop User-Agents and Viewports
+# Realistic Desktop User-Agents and Viewports (Chromium-only to match Sec-CH-UA)
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:135.0) Gecko/20100101 Firefox/135.0",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36 Edg/133.0.0.0"
 ]
 
@@ -141,8 +140,9 @@ def dump_debug_artifacts(page, reason: str):
         return
 
     debug_dump_saved = True
-    screenshot_path = Path("scripts/debug_page.png")
-    html_path = Path("scripts/debug_page.html")
+    script_dir = Path(__file__).resolve().parent
+    screenshot_path = script_dir / "debug_page.png"
+    html_path = script_dir / "debug_page.html"
 
     try:
         page.screenshot(path=str(screenshot_path), full_page=True)
@@ -201,7 +201,7 @@ def scrape_flipkart_product(page, url: str, pincode: str) -> dict:
             json_ld_elements = page.locator('script[type="application/ld+json"]')
             count = json_ld_elements.count()
             for i in range(count):
-                raw_script = json_ld_elements.nth(i).inner_text().strip()
+                raw_script = (json_ld_elements.nth(i).text_content() or "").strip()
                 if not raw_script:
                     continue
                 try:
@@ -305,26 +305,7 @@ def scrape_flipkart_product(page, url: str, pincode: str) -> dict:
         # ----------------------------------------------------------------------
         # LAYER (c): Delivery Pincode Check & Stock State
         # ----------------------------------------------------------------------
-        # Check explicit out-of-stock indicators
-        out_of_stock_indicators = [
-            "text='Currently Out of Stock'",
-            "text='Sold Out'",
-            "text='Item is out of stock'",
-            "div._16FRp0",
-            "div._1V9wT4"
-        ]
-        is_sold_out = any(page.locator(ind).count() > 0 for ind in out_of_stock_indicators)
-
-        # Check for active Buy Now / Add to Cart buttons
-        buy_now_btn = page.locator("button:has-text('Buy Now'), button:has-text('Add to Cart'), button._2KpZ6l._2U9uOA")
-        has_buy_button = buy_now_btn.count() > 0 and buy_now_btn.first.is_visible()
-
-        if is_sold_out or not has_buy_button:
-            result["status"] = "out_of_stock"
-        else:
-            result["status"] = "in_stock"
-
-        # Try setting target delivery pincode
+        # 1. Enter target delivery pincode BEFORE evaluating stock & delivery
         try:
             pincode_input = page.locator('#pincodeInputId, input[placeholder*="pincode" i], input[placeholder*="PIN code" i], input[placeholder*="Delivery" i]')
             if pincode_input.count() > 0 and pincode_input.first.is_visible():
@@ -339,19 +320,21 @@ def scrape_flipkart_product(page, url: str, pincode: str) -> dict:
                     check_btn.first.click()
                 else:
                     pincode_input.first.press('Enter')
-                time.sleep(1.5)
+                time.sleep(1.8)
         except Exception as pin_err:
             if IS_DEBUG_MODE:
                 print(f"   🔍 [DEBUG] Pincode entry note: {pin_err}")
 
-        # Extract delivery estimate text (strict validation)
+        # 2. Extract delivery estimate text right after pincode check
         delivery_locators = [
             "div._3XINqE",
             "span._1TPvTK",
             "div:has-text('Delivery by')",
             "div.hVvnXm",
             "div:has-text('Delivery in')",
-            "div:has-text('Delivered by')"
+            "div:has-text('Delivered by')",
+            "div:has-text('Not deliverable')",
+            "div:has-text('Currently out of stock')"
         ]
         found_delivery = None
         for d_sel in delivery_locators:
@@ -373,6 +356,28 @@ def scrape_flipkart_product(page, url: str, pincode: str) -> dict:
                 break
 
         result["delivery_text"] = found_delivery
+
+        # 3. Evaluate explicit out-of-stock indicators, buttons, and delivery text
+        out_of_stock_indicators = [
+            "text='Currently Out of Stock'",
+            "text='Currently out of stock in this area'",
+            "text='Sold Out'",
+            "text='Item is out of stock'",
+            "div._16FRp0",
+            "div._1V9wT4"
+        ]
+        is_sold_out = any(page.locator(ind).count() > 0 for ind in out_of_stock_indicators)
+
+        buy_now_btn = page.locator("button:has-text('Buy Now'), button:has-text('Add to Cart'), button._2KpZ6l._2U9uOA")
+        has_buy_button = buy_now_btn.count() > 0 and buy_now_btn.first.is_visible()
+
+        delivery_lower = (found_delivery or "").lower()
+        is_delivery_unavailable = ("not deliverable" in delivery_lower) or ("out of stock" in delivery_lower)
+
+        if is_sold_out or not has_buy_button or is_delivery_unavailable:
+            result["status"] = "out_of_stock"
+        else:
+            result["status"] = "in_stock"
 
         # Check if parsing succeeded
         if result["price"] and result["price"] > 1000:
@@ -480,10 +485,6 @@ def main():
             timezone_id="Asia/Kolkata",
             extra_http_headers={
                 "Accept-Language": "en-IN,en;q=0.9",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Sec-Fetch-Site": "same-origin",
-                "Sec-Fetch-Mode": "navigate",
-                "Sec-Fetch-Dest": "document",
                 "Upgrade-Insecure-Requests": "1"
             }
         )
@@ -515,7 +516,7 @@ def main():
             phone_id = phone["id"]
             name = phone["model_name"]
             url = phone["flipkart_url"]
-            old_price = phone["current_price_inr"]
+            old_price = phone.get("current_price_inr") or 0
 
             prev_stock_record = current_stock_map.get(phone_id, {})
             prev_status = prev_stock_record.get("status", "out_of_stock")
@@ -536,7 +537,7 @@ def main():
                 f"In Stock for {TARGET_PINCODE}" if new_status != 'out_of_stock' else f"Unavailable for {TARGET_PINCODE}"
             )
             scraped_success += 1
-            print(f"   ✅ [OK] Live extracted: ₹{price_to_record:,} (Source: {data.get('source', 'live')}) | Stock: {new_status}")
+            print(f"   ✅ [OK] Live extracted: ₹{price_to_record:,} (Source: {data.get('source', 'live')}) | Stock: {new_status} | Delivery: {delivery_text}")
 
             # Determine restock transition (out_of_stock -> in_stock becomes 'back_in_stock')
             final_status = new_status
@@ -626,6 +627,10 @@ def main():
     print(f"📊 Phones Processed: {len(active_phones)} | Success: {scraped_success} | Failed/Skipped: {scraped_failed}")
     print(f"🚨 Restock Alerts: {restock_alerts} | 📉 Price Drop Alerts: {price_drop_alerts}")
     print("=" * 70)
+
+    if len(active_phones) > 0 and scraped_success == 0:
+        print("❌ [ERROR] All active product scrapes failed (0 succeeded). Exiting with code 1.")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
